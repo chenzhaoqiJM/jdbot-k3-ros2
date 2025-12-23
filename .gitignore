@@ -1,0 +1,21 @@
+# 忽略 VSCode 配置
+.vscode/
+
+# Python 缓存文件
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 虚拟环境（根据你的虚拟环境目录命名而定）
+venv/
+.env/
+env/
+
+# Jupyter Notebook 检查点
+.ipynb_checkpoints/
+
+# 临时文件
+*.log
+*.tmp
+*.swp
+.DS_Store

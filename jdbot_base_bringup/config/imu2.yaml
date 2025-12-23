@@ -1,0 +1,11 @@
+imu_filter:
+    ros__parameters:
+        stateless: false
+        use_mag: false                # 关闭磁力计，可避免干扰
+        publish_tf: false             # 交由 URDF 发布
+        fixed_frame: "base_footprint"
+        constant_dt: 0.0
+        world_frame: "enu"
+        gain: 0.05
+        zeta: 0.0
+        orientation_stddev: 0.03
