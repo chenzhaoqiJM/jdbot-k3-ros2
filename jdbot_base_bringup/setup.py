@@ -23,7 +23,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'client_node = jdbot_base_bringup.client_node:main'
+            'ros2_ctrl_odom_node = jdbot_base_bringup.ros2_ctrl_odom_node:main'
         ],
     },
 )

@@ -34,6 +34,11 @@ def generate_launch_description():
         arguments=['0.15', '0', '0.06', '0.0', '0.0', '0.0', '/base_link', '/camera_link'],
         )
 
+    drive_node = Node(package='jdbot_base_bringup',
+        executable='ros2_ctrl_odom_node',
+        name='ros2_ctrl_odom_node',
+        )
+
     return LaunchDescription([
         # robot_state_pub_node,
         tf2_node_base,
