@@ -44,5 +44,6 @@ def generate_launch_description():
         tf2_node_base,
         tf2_node_laser,
         tf2_node_rgbd,
+        drive_node,
 
     ])
