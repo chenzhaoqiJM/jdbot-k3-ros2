@@ -18,7 +18,7 @@ def generate_launch_description():
 
     # 用于导航的配置参数
     param_dir = os.path.join(br_nav_dir, 'config')
-    param_file = LaunchConfiguration('params', default=os.path.join(param_dir, 'jdbot_diff_dev.yaml'))
+    param_file = LaunchConfiguration('params', default=os.path.join(param_dir, 'jdbot_diff.yaml'))
 
     return LaunchDescription([
         DeclareLaunchArgument(

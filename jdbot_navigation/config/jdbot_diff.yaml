@@ -156,7 +156,7 @@ controller_server:
       decel_lim_x: -0.45
       decel_lim_y: 0.0
       decel_lim_theta: -0.5
-      vx_samples: 20
+      vx_samples: 30
       vy_samples: 0
       vtheta_samples: 40
       sim_time: 2.1
@@ -170,9 +170,9 @@ controller_server:
       critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]
       BaseObstacle.scale: 0.02
       PathAlign.scale: 32.0
-      PathAlign.forward_point_distance: 0.1
+      PathAlign.forward_point_distance: 0.5
       GoalAlign.scale: 24.0
-      GoalAlign.forward_point_distance: 0.1
+      GoalAlign.forward_point_distance: 0.5
       PathDist.scale: 32.0
       GoalDist.scale: 24.0
       RotateToGoal.scale: 32.0
