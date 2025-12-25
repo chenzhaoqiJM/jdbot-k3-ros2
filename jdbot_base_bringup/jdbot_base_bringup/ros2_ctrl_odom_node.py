@@ -23,7 +23,7 @@ class CmdVelToSerial(Node):
         super().__init__('cmdvel_to_serial')
 
         # ---------------- 参数 ----------------
-        self.declare_parameter('serial_port', '/dev/ttyACM0')
+        self.declare_parameter('serial_port', '/dev/jdbot')
         self.declare_parameter('baudrate', 115200)
         self.declare_parameter('send_hz', 20.0)
         self.declare_parameter('cmd_vel_timeout', 0.4)

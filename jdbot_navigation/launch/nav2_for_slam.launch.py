@@ -13,7 +13,7 @@ def generate_launch_description():
     br_nav_dir = get_package_share_directory('jdbot_navigation')
     br_nav_launchr = os.path.join(br_nav_dir, 'launch')
 
-    param_file_name = 'jdbot_diff.yaml'
+    param_file_name = 'jdbot_diff_mpc.yaml'
     param_dir = os.path.join(br_nav_dir, 'config')
     param_file = LaunchConfiguration('params', default=os.path.join(param_dir, param_file_name))
 
