@@ -1,49 +1,89 @@
 #!/usr/bin/env python3
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, RegisterEventHandler
-from launch.event_handlers import OnProcessExit
-from launch.substitutions import Command, FindExecutable, PathJoinSubstitution, LaunchConfiguration
+from launch.actions import DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
-from launch_ros.substitutions import FindPackageShare
-from launch_ros.parameter_descriptions import ParameterValue
-from launch.conditions import IfCondition
-import os
-import xacro
-from ament_index_python.packages import get_package_share_directory
+
 
 def generate_launch_description():
 
-    tf2_node_base = Node(package='tf2_ros',
+    # ================== 声明 Launch 参数 ==================
+    publish_tf = LaunchConfiguration('publish_tf')
+    odom_topic = LaunchConfiguration('odom_topic')
+    odom_frame = LaunchConfiguration('odom_frame')
+    base_frame = LaunchConfiguration('base_frame')
+
+    declare_publish_tf = DeclareLaunchArgument(
+        'publish_tf',
+        default_value='true',
+        description='Whether to publish odom -> base TF'
+    )
+
+    declare_odom_topic = DeclareLaunchArgument(
+        'odom_topic',
+        default_value='odom',
+        description='Odometry topic name'
+    )
+
+    declare_odom_frame = DeclareLaunchArgument(
+        'odom_frame',
+        default_value='odom',
+        description='Odometry frame id'
+    )
+
+    declare_base_frame = DeclareLaunchArgument(
+        'base_frame',
+        default_value='base_footprint',
+        description='Base frame id'
+    )
+
+    # ================== TF 静态变换 ==================
+    tf2_node_base = Node(
+        package='tf2_ros',
         executable='static_transform_publisher',
         name='static_tf_pub_laser',
-        arguments=['0.0', '0.0', '0.0001', '0.0', '0.0', '0.0', '/base_footprint', '/base_link'],
-        )
+        arguments=['0.0', '0.0', '0.0001', '0.0', '0.0', '0.0',
+                   'base_footprint', 'base_link'],
+    )
 
-    tf2_node_laser = Node(package='tf2_ros',
+    tf2_node_laser = Node(
+        package='tf2_ros',
         executable='static_transform_publisher',
         name='tf_pub_base_to_laser',
-        # arguments=['0.07', '0.0', '0.10', '3.14159265', '0.0', '0.0', '/base_link', '/laser_link'],
-        arguments=['0.0', '-0.03', '0.10', '0', '0.0', '0.0', '/base_link', '/laser_link'],
-        )
+        arguments=['0.0', '-0.03', '0.10', '0', '0.0', '0.0',
+                   'base_link', 'laser_link'],
+    )
 
-
-    tf2_node_rgbd = Node(package='tf2_ros',
+    tf2_node_rgbd = Node(
+        package='tf2_ros',
         executable='static_transform_publisher',
         name='static_tf_pub_rgbd',
-        arguments=['0.15', '0', '0.06', '0.0', '0.0', '0.0', '/base_link', '/camera_link'],
-        )
+        arguments=['0.15', '0', '0.06', '0.0', '0.0', '0.0',
+                   'base_link', 'camera_link'],
+    )
 
-    drive_node = Node(package='jdbot_base_bringup',
+    # ================== 底盘里程计节点 ==================
+    drive_node = Node(
+        package='jdbot_base_bringup',
         executable='ros2_ctrl_odom_node',
         name='ros2_ctrl_odom_node',
-        )
+        parameters=[{
+            'publish_tf': publish_tf,
+            'odom_topic': odom_topic,
+            'odom_frame': odom_frame,
+            'base_frame': base_frame,
+        }]
+    )
 
     return LaunchDescription([
-        # robot_state_pub_node,
+        declare_publish_tf,
+        declare_odom_topic,
+        declare_odom_frame,
+        declare_base_frame,
+
         tf2_node_base,
         tf2_node_laser,
         tf2_node_rgbd,
         drive_node,
-
     ])
