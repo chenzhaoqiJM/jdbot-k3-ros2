@@ -149,8 +149,8 @@ void PidCmdVelToMotor::send_cmd(double v, double w) {
   char buf[64];
   recv(sock_, buf, sizeof(buf), 0);
 
-  v_l_ = motor1_speed_feedback;
-  v_r_ = motor2_speed_feedback;
+  v_l_ = to_wheel_linear(dir_l, motor1_speed_feedback);
+  v_r_ = to_wheel_linear(dir_r, motor2_speed_feedback);
 }
 
 std::pair<int, double> PidCmdVelToMotor::cmd_to_wheel(double v) {
@@ -160,6 +160,23 @@ std::pair<int, double> PidCmdVelToMotor::cmd_to_wheel(double v) {
   int dir = v > 0 ? 1 : 2;
   double speed = std::abs(v) / (M_PI * WHEEL_DIAMETER);
   return {dir, speed};
+}
+
+double PidCmdVelToMotor::to_wheel_linear(int direction, double speed_angular) {
+
+  double linear_speed = 0;
+  if (std::abs(speed_angular) < 1e-3 || direction == 0){
+    return 0;
+  }
+  
+  if(direction == 1){
+    linear_speed = speed_angular * (M_PI * WHEEL_DIAMETER);
+  }
+  else{
+    linear_speed = -1.0 * speed_angular * (M_PI * WHEEL_DIAMETER);
+  }
+
+  return linear_speed;
 }
 
 void PidCmdVelToMotor::odom_timer_callback() {

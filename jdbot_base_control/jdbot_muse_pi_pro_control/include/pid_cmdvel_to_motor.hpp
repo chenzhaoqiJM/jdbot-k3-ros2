@@ -28,6 +28,7 @@ private:
   void send_cmd(double v, double w);
   void publish_odom(double v, double w);
   std::pair<int, double> cmd_to_wheel(double v);
+  double to_wheel_linear(int direction, double speed_angular);
 
   /* ---------- parameters ---------- */
   double control_hz_;
