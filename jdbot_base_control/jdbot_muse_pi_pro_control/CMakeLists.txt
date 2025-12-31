@@ -46,6 +46,7 @@ add_executable(pid_ff_node
   src/motor_direction_ctrl.cpp
   src/motor_model.cpp
   src/pid_encoder.cpp
+  src/pid_controller.cpp
 )
 
 target_link_libraries(pid_ff_node

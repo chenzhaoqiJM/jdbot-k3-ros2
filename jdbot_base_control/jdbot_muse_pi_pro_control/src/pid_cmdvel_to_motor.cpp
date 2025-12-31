@@ -1,6 +1,8 @@
-#include "jdbot_muse_pi_pro_control/pid_cmdvel_to_motor.hpp"
+
 #include "jdbot_muse_pi_pro_control/motor_model.hpp"
 #include "jdbot_muse_pi_pro_control/robot_config.hpp"
+
+#include "pid_cmdvel_to_motor.hpp"
 #include "pid_encoder.hpp"
 
 #include <cmath>
@@ -75,6 +77,10 @@ PidCmdVelToMotor::PidCmdVelToMotor() : Node("cmdvel_to_motor"), dir_ctrl_() {
   if (!encoder_motor2_->start()) {
     RCLCPP_ERROR(get_logger(), "Failed to start encoder for motor2 (GPIO 72)");
   }
+
+  /* PID Init*/
+  PID_Controller_Init(&motor1_pid_, 0.01, 0.1, 0.0, 1.0 / control_hz_, 0.02, 1.0); // *PID_Controller、kp、ki、kd、dt、i_limit、out_limit
+  PID_Controller_Init(&motor2_pid_, 0.01, 0.1, 0.0, 1.0 / control_hz_, 0.02, 1.0); // *PID_Controller、kp、ki、kd、dt、i_limit、out_limit
 }
 
 PidCmdVelToMotor::~PidCmdVelToMotor() { close(sock_); }
@@ -103,17 +109,39 @@ void PidCmdVelToMotor::control_timer_callback() {
 }
 
 void PidCmdVelToMotor::send_cmd(double v, double w) {
+
+  // 计算目标轮速和方向
   double v_l = v - w * WHEEL_BASE / 2.0;
   double v_r = v + w * WHEEL_BASE / 2.0;
 
-  auto [dir_l, spd_l] = cmd_to_wheel(v_l);
-  auto [dir_r, spd_r] = cmd_to_wheel(v_r);
+  auto [dir_l, target_spd_l] = cmd_to_wheel(v_l);
+  auto [dir_r, target_spd_r] = cmd_to_wheel(v_r);
 
-  dir_ctrl_.motor1_direction(dir_l);
+  dir_ctrl_.motor1_direction(dir_l); // 设置电机方向
   dir_ctrl_.motor2_direction(dir_r);
 
-  json j{{"duty_motor1", motor_model::motor1_model(dir_l, spd_l)},
-         {"duty_motor2", motor_model::motor2_model(dir_r, spd_r)}};
+  //
+  motor1_pid_.setpoint = target_spd_l;
+  motor2_pid_.setpoint = target_spd_r;
+
+  // 计算前馈值
+  double motor1_pwm_ff = motor_model::motor1_model(dir_l, target_spd_l);
+  double motor2_pwm_ff = motor_model::motor2_model(dir_r, target_spd_r);
+
+  // 获取实际轮速
+  double motor1_speed_feedback = encoder_motor1_->speed_rps();
+  double motor2_speed_feedback = encoder_motor2_->speed_rps();
+  
+  // 计算 PID
+  double motor1_pwm_output = PID_FF_Update(&motor1_pid_, motor1_speed_feedback, motor1_pwm_ff); // 带前馈的PID
+  double motor2_pwm_output = PID_FF_Update(&motor2_pid_, motor2_speed_feedback, motor2_pwm_ff); // 带前馈的PID
+  
+  printf("motor1_target: %.3f motor1: %.3f 转/s, motor2_target: %.3f motor2: "
+         "%.3f 转/s\n",
+         target_spd_l, motor1_speed_feedback, target_spd_r, motor2_speed_feedback);
+
+  json j{{"duty_motor1", motor1_pwm_output},
+         {"duty_motor2", motor2_pwm_output}};
 
   auto s = j.dump();
   send(sock_, s.c_str(), s.size(), 0);
@@ -121,8 +149,8 @@ void PidCmdVelToMotor::send_cmd(double v, double w) {
   char buf[64];
   recv(sock_, buf, sizeof(buf), 0);
 
-  v_l_ = v_l;
-  v_r_ = v_r;
+  v_l_ = motor1_speed_feedback;
+  v_r_ = motor2_speed_feedback;
 }
 
 std::pair<int, double> PidCmdVelToMotor::cmd_to_wheel(double v) {

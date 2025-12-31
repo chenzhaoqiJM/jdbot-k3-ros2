@@ -11,6 +11,7 @@
 
 #include "jdbot_muse_pi_pro_control/motor_direction_ctrl.hpp"
 #include "pid_encoder.hpp"
+#include "pid_controller.hpp"
 
 class PidCmdVelToMotor : public rclcpp::Node {
 public:
@@ -64,4 +65,8 @@ private:
   /* ---------- encoder ---------- */
   std::unique_ptr<EncoderSpeedMeter> encoder_motor1_; // GPIO 73
   std::unique_ptr<EncoderSpeedMeter> encoder_motor2_; // GPIO 72
+
+  /* PID INIT*/
+  PID_Controller motor1_pid_;
+  PID_Controller motor2_pid_;
 };
