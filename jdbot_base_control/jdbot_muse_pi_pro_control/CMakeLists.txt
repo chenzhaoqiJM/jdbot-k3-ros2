@@ -19,6 +19,7 @@ find_package(tf2_ros REQUIRED)
 
 find_package(nlohmann_json REQUIRED)
 
+# openloop node
 add_executable(openloop_node
   src/openloop_node.cpp
   src/cmdvel_to_motor.cpp
@@ -38,7 +39,32 @@ ament_target_dependencies(openloop_node
   tf2_ros
 )
 
+# encoder node
+add_executable(pid_ff_node
+  src/pid_ff_node.cpp
+  src/pid_cmdvel_to_motor.cpp
+  src/motor_direction_ctrl.cpp
+  src/motor_model.cpp
+  src/pid_encoder.cpp
+)
+
+target_link_libraries(pid_ff_node
+  gpiod
+  lgpio
+  nlohmann_json::nlohmann_json
+)
+
+ament_target_dependencies(pid_ff_node
+  rclcpp
+  geometry_msgs
+  nav_msgs
+  tf2_ros
+)
+
 install(TARGETS openloop_node
+  DESTINATION lib/${PROJECT_NAME})
+
+install(TARGETS pid_ff_node
   DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)
