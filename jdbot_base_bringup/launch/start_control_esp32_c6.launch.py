@@ -47,12 +47,11 @@ def generate_launch_description():
                    'base_footprint', 'base_link'],
     )
 
-    # rplidar
     tf2_node_laser = Node(
         package='tf2_ros',
         executable='static_transform_publisher',
         name='tf_pub_base_to_laser',
-        arguments=['0.0', '-0.0', '0.10', '0', '0.0', '3.14159',
+        arguments=['0.0', '-0.03', '0.10', '0', '0.0', '0.0',
                    'base_link', 'laser_link'],
     )
 
@@ -66,9 +65,9 @@ def generate_launch_description():
 
     # ================== 底盘里程计节点 ==================
     drive_node = Node(
-        package='jdbot_muse_pi_pro_control',
-        executable='pid_ff_node',
-        name='pid_ff_node',
+        package='jdbot_base_bringup',
+        executable='ros2_ctrl_odom_node',
+        name='ros2_ctrl_odom_node',
         parameters=[{
             'publish_tf': publish_tf,
             'odom_topic': odom_topic,
