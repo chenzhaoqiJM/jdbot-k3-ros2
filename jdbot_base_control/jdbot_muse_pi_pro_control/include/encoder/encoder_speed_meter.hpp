@@ -1,6 +1,6 @@
 #ifndef ENCODER_SPEED_METER_HPP
 #define ENCODER_SPEED_METER_HPP
-
+#include <gpiod.h>
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
@@ -54,39 +54,41 @@ public:
   double get_rpm() const;
 
 private:
-  /* ---------- GPIO ---------- */
-  unsigned int gpio_offset_;
-  unsigned int chip_index_;
+    /* ---------- GPIO ---------- */
+    unsigned int gpio_offset_;
+    unsigned int chip_index_;
+    std::unique_ptr<gpiod::chip> chip_;
+    std::unique_ptr<gpiod::line> line_;
 
-  /* ---------- 参数 ---------- */
-  double sample_period_;
-  double encoder_ppr_;
-  double encoder_edges_;
-  double gear_ratio_;
-  double alpha_;
-  size_t queue_size_;
-  
-  /* ---------- 状态 ---------- */
-  mutable std::mutex lock_;
-  uint64_t pulse_count_{0};
-  bool has_rising_{false};
-  std::atomic<double> current_rps_{0.0};
+    /* ---------- 参数 ---------- */
+    double sample_period_;
+    double encoder_ppr_;
+    double encoder_edges_;
+    double gear_ratio_;
+    double alpha_;
+    size_t queue_size_;
+    
+    /* ---------- 状态 ---------- */
+    mutable std::mutex lock_;
+    uint64_t pulse_count_{0};
+    bool has_rising_{false};
+    std::atomic<double> current_rps_{0.0};
 
-  /* ---------- 线程通信 ---------- */
-  std::queue<std::pair<double, uint64_t>> queue_;
-  std::atomic<bool> stop_flag_{true};
-  std::condition_variable cv_;
+    /* ---------- 线程通信 ---------- */
+    std::queue<std::pair<double, uint64_t>> queue_;
+    std::atomic<bool> stop_flag_{true};
+    std::condition_variable cv_;
 
-  /* ---------- 线程 ---------- */
-  std::thread interrupt_thread_;
-  std::thread sampler_thread_;
-  std::thread processor_thread_;
+    /* ---------- 线程 ---------- */
+    std::thread interrupt_thread_;
+    std::thread sampler_thread_;
+    std::thread processor_thread_;
 
-  /* ---------- 私有方法 ---------- */
-  void interrupt_loop();
-  void handle_event(const gpiod::line_event &event);
-  void sampler_loop();
-  void processor_loop();
+    /* ---------- 私有方法 ---------- */
+    void interrupt_loop();
+    void handle_event(const gpiod::line_event &event);
+    void sampler_loop();
+    void processor_loop();
 };
 
 #endif // ENCODER_SPEED_METER_HPP

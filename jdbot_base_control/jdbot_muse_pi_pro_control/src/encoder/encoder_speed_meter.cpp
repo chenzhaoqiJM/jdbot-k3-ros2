@@ -54,35 +54,50 @@ double EncoderSpeedMeter::get_rps() const { return current_rps_.load(); }
 double EncoderSpeedMeter::get_rpm() const { return current_rps_.load() * 60.0; }
 
 /* ================== GPIO 中断监听线程 ================== */
-void EncoderSpeedMeter::interrupt_loop() {
+void EncoderSpeedMeter::interrupt_loop()
+{
     std::string chip_path = "/dev/gpiochip" + std::to_string(chip_index_);
-    gpiod::chip chip(chip_path);
-    gpiod::line line = chip.get_line(gpio_offset_);
 
-    line.request({"encoder", gpiod::line_request::EVENT_BOTH_EDGES, gpiod::line_request::FLAG_BIAS_PULL_UP});
+    /* 1. 创建 chip 对象（成员） */
+    chip_ = std::make_unique<gpiod::chip>(chip_path);
 
+    /* 2. 获取 line（成员） */
+    line_ = std::make_unique<gpiod::line>(chip_->get_line(gpio_offset_));
+
+    /* 3. 申请中断 */
+    line_->request({
+        "encoder",
+        gpiod::line_request::EVENT_BOTH_EDGES,
+        gpiod::line_request::FLAG_BIAS_PULL_UP
+    });
+
+    /* 4. 中断循环 */
     while (!stop_flag_) {
-        if (!line.event_wait(std::chrono::milliseconds(100)))
+        if (!line_->event_wait(std::chrono::milliseconds(100)))
             continue;
 
-        gpiod::line_event event = line.event_read();
+        gpiod::line_event event = line_->event_read();
         handle_event(event);
     }
+
+    /* 5. 可选：显式释放（不写也行，RAII 会处理） */
+    line_.reset();
+    chip_.reset();
 }
 
 /* ================== 中断逻辑 ================== */
 void EncoderSpeedMeter::handle_event(const gpiod::line_event &event) {
-  std::lock_guard<std::mutex> guard(lock_);
+    std::lock_guard<std::mutex> guard(lock_);
 
-  if (event.event_type == gpiod::line_event::RISING_EDGE) {
-    has_rising_ = true;
-  } else if (event.event_type == gpiod::line_event::FALLING_EDGE) {
-    if (has_rising_) {
-      pulse_count_++;
-      has_rising_ = false;
-      cv_.notify_all();
+    if (event.event_type == gpiod::line_event::RISING_EDGE) {
+        has_rising_ = true;
+    } else if (event.event_type == gpiod::line_event::FALLING_EDGE) {
+        if (has_rising_) {
+            pulse_count_++;
+            has_rising_ = false;
+            cv_.notify_all();
+        }
     }
-  }
 }
 
 /* ================== 采样线程 ================== */
