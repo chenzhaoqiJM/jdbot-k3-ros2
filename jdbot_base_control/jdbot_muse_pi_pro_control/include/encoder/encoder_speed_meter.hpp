@@ -36,6 +36,7 @@ public:
                     double encoder_ppr = 11.0, 
                     double encoder_edges = 1.0,
                     double gear_ratio = 56.0, 
+                    double alpha = 0.1,
                     size_t queue_size = 10);
 
   ~EncoderSpeedMeter();
@@ -62,6 +63,7 @@ private:
   double encoder_ppr_;
   double encoder_edges_;
   double gear_ratio_;
+  double alpha_;
   size_t queue_size_;
   
   /* ---------- 状态 ---------- */

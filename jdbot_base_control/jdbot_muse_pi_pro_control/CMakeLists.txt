@@ -47,6 +47,8 @@ add_executable(pid_ff_node
   src/pid_control/pid_controller.cpp
 
   src/encoder/encoder_speed_meter.cpp
+  # src/encoder/encoder_no_sync.cpp
+
   src/motor_direction_ctrl.cpp
   src/motor_model.cpp
 )

@@ -8,6 +8,7 @@ EncoderSpeedMeter::EncoderSpeedMeter(unsigned int gpio_offset,
                                      double encoder_ppr, 
                                      double encoder_edges,
                                      double gear_ratio, 
+                                     double alpha,
                                      size_t queue_size)
     : gpio_offset_(gpio_offset), 
     chip_index_(chip_index),
@@ -15,6 +16,7 @@ EncoderSpeedMeter::EncoderSpeedMeter(unsigned int gpio_offset,
     encoder_ppr_(encoder_ppr),
     encoder_edges_(encoder_edges),
     gear_ratio_(gear_ratio), 
+    alpha_(alpha),
     queue_size_(queue_size) 
     {
 
@@ -130,7 +132,7 @@ void EncoderSpeedMeter::processor_loop() {
 
     current_rps_.store(rps);
 
-    printf("dt: %.3f ms, Pulse: %ld, 转/s: %.3f, 转/min: %.3f\n", dt * 1000.0,
-           pulse, rps, rps * 60.0);
+    // printf("dt: %.3f ms, Pulse: %ld, 转/s: %.3f, 转/min: %.3f\n", dt * 1000.0,
+    //        pulse, rps, rps * 60.0);
   }
 }
