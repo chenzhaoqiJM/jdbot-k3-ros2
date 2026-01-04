@@ -4,23 +4,13 @@
 
 EncoderSpeedMeter::EncoderSpeedMeter(unsigned int gpio_offset,
                                      unsigned int chip_index,
-                                     double sample_period, 
-                                     double encoder_ppr, 
-                                     double encoder_edges,
-                                     double gear_ratio, 
-                                     double alpha,
-                                     size_t queue_size)
-    : gpio_offset_(gpio_offset), 
-    chip_index_(chip_index),
-    sample_period_(sample_period), 
-    encoder_ppr_(encoder_ppr),
-    encoder_edges_(encoder_edges),
-    gear_ratio_(gear_ratio), 
-    alpha_(alpha),
-    queue_size_(queue_size) 
-    {
-
-    }
+                                     double sample_period, double encoder_ppr,
+                                     double encoder_edges, double gear_ratio,
+                                     double alpha, size_t queue_size)
+    : gpio_offset_(gpio_offset), chip_index_(chip_index),
+      sample_period_(sample_period), encoder_ppr_(encoder_ppr),
+      encoder_edges_(encoder_edges), gear_ratio_(gear_ratio), alpha_(alpha),
+      queue_size_(queue_size) {}
 
 EncoderSpeedMeter::~EncoderSpeedMeter() { stop(); }
 
@@ -54,50 +44,46 @@ double EncoderSpeedMeter::get_rps() const { return current_rps_.load(); }
 double EncoderSpeedMeter::get_rpm() const { return current_rps_.load() * 60.0; }
 
 /* ================== GPIO 中断监听线程 ================== */
-void EncoderSpeedMeter::interrupt_loop()
-{
-    std::string chip_path = "/dev/gpiochip" + std::to_string(chip_index_);
+void EncoderSpeedMeter::interrupt_loop() {
+  std::string chip_path = "/dev/gpiochip" + std::to_string(chip_index_);
 
-    /* 1. 创建 chip 对象（成员） */
-    chip_ = std::make_unique<gpiod::chip>(chip_path);
+  /* 1. 创建 chip 对象（成员） */
+  chip_ = std::make_unique<gpiod::chip>(chip_path);
 
-    /* 2. 获取 line（成员） */
-    line_ = std::make_unique<gpiod::line>(chip_->get_line(gpio_offset_));
+  /* 2. 获取 line（成员） */
+  line_ = std::make_unique<gpiod::line>(chip_->get_line(gpio_offset_));
 
-    /* 3. 申请中断 */
-    line_->request({
-        "encoder",
-        gpiod::line_request::EVENT_BOTH_EDGES,
-        gpiod::line_request::FLAG_BIAS_PULL_UP
-    });
+  /* 3. 申请中断 */
+  line_->request({"encoder", gpiod::line_request::EVENT_BOTH_EDGES,
+                  gpiod::line_request::FLAG_BIAS_PULL_UP});
 
-    /* 4. 中断循环 */
-    while (!stop_flag_) {
-        if (!line_->event_wait(std::chrono::milliseconds(100)))
-            continue;
+  /* 4. 中断循环 */
+  while (!stop_flag_) {
+    if (!line_->event_wait(std::chrono::milliseconds(100)))
+      continue;
 
-        gpiod::line_event event = line_->event_read();
-        handle_event(event);
-    }
+    gpiod::line_event event = line_->event_read();
+    handle_event(event);
+  }
 
-    /* 5. 可选：显式释放（不写也行，RAII 会处理） */
-    line_.reset();
-    chip_.reset();
+  /* 5. 可选：显式释放（不写也行，RAII 会处理） */
+  line_.reset();
+  chip_.reset();
 }
 
 /* ================== 中断逻辑 ================== */
 void EncoderSpeedMeter::handle_event(const gpiod::line_event &event) {
-    std::lock_guard<std::mutex> guard(lock_);
+  std::lock_guard<std::mutex> guard(lock_);
 
-    if (event.event_type == gpiod::line_event::RISING_EDGE) {
-        has_rising_ = true;
-    } else if (event.event_type == gpiod::line_event::FALLING_EDGE) {
-        if (has_rising_) {
-            pulse_count_++;
-            has_rising_ = false;
-            cv_.notify_all();
-        }
+  if (event.event_type == gpiod::line_event::RISING_EDGE) {
+    has_rising_ = true;
+  } else if (event.event_type == gpiod::line_event::FALLING_EDGE) {
+    if (has_rising_) {
+      pulse_count_++;
+      has_rising_ = false;
+      cv_.notify_all();
     }
+  }
 }
 
 /* ================== 采样线程 ================== */
@@ -114,8 +100,11 @@ void EncoderSpeedMeter::sampler_loop() {
     uint64_t pulse = 0;
     {
       std::unique_lock<std::mutex> lk(lock_);
-      // 如果正在数一个脉冲，等它完成
-      cv_.wait(lk, [&] { return !has_rising_; });
+      // 如果正在数一个脉冲，等它完成；同时检查 stop_flag_ 以便能响应退出信号
+      cv_.wait(lk, [&] { return stop_flag_.load() || !has_rising_; });
+
+      if (stop_flag_)
+        break;
 
       pulse = pulse_count_;
       pulse_count_ = 0;
@@ -141,13 +130,15 @@ void EncoderSpeedMeter::processor_loop() {
     if (dt <= 0.0)
       continue;
 
-    double encoder_turns = static_cast<double>(pulse) / (encoder_ppr_ * encoder_edges_);
+    double encoder_turns =
+        static_cast<double>(pulse) / (encoder_ppr_ * encoder_edges_);
     double motor_turns = encoder_turns / gear_ratio_;
     double rps = motor_turns / dt;
 
     current_rps_.store(rps);
 
-    // printf("dt: %.3f ms, Pulse: %ld, 转/s: %.3f, 转/min: %.3f\n", dt * 1000.0,
+    // printf("dt: %.3f ms, Pulse: %ld, 转/s: %.3f, 转/min: %.3f\n", dt *
+    // 1000.0,
     //        pulse, rps, rps * 60.0);
   }
 }
