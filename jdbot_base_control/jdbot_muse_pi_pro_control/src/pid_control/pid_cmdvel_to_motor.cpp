@@ -78,8 +78,8 @@ PidCmdVelToMotor::PidCmdVelToMotor() : Node("cmdvel_to_motor"), dir_ctrl_() {
   // }
 
   /* PID Init*/
-  PID_Controller_Init(&motor1_pid_, 0.03, 0.5, 0.0, 1.0 / control_hz_, 0.02, 1.0); // *PID_Controller、kp、ki、kd、dt、i_limit、out_limit
-  PID_Controller_Init(&motor2_pid_, 0.03, 0.6, 0.0, 1.0 / control_hz_, 0.02, 1.0); // *PID_Controller、kp、ki、kd、dt、i_limit、out_limit
+  PID_Controller_Init(&motor1_pid_, 0.01, 0.5, 0.01, 1.0 / control_hz_, 1.0, 1.0); // *PID_Controller、kp、ki、kd、dt、i_limit、out_limit
+  PID_Controller_Init(&motor2_pid_, 0.01, 0.5, 0.01, 1.0 / control_hz_, 1.0, 1.0); // *PID_Controller、kp、ki、kd、dt、i_limit、out_limit
 }
 
 PidCmdVelToMotor::~PidCmdVelToMotor() { 
