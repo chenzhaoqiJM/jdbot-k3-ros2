@@ -10,8 +10,8 @@
 #include <string>
 
 #include "motor_direction_ctrl.hpp"
-#include "pid_encoder.hpp"
-#include "pid_controller.hpp"
+#include "encoder/encoder_speed_meter.hpp"
+#include "pid_control/pid_controller.hpp"
 
 class PidCmdVelToMotor : public rclcpp::Node {
 public:

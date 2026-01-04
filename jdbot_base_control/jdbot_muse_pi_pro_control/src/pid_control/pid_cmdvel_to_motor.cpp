@@ -3,7 +3,9 @@
 #include "robot_config.hpp"
 
 #include "pid_control/pid_cmdvel_to_motor.hpp"
-#include "pid_control/pid_encoder.hpp"
+
+#include "encoder/encoder_speed_meter.hpp"
+
 
 #include <cmath>
 #include <sys/socket.h>
@@ -63,20 +65,21 @@ PidCmdVelToMotor::PidCmdVelToMotor() : Node("cmdvel_to_motor"), dir_ctrl_() {
   encoder_motor1_ = std::make_unique<EncoderSpeedMeter>(
       73, 0, sample_period, robot_config::ENCODER_PPR,
       robot_config::ENCODER_EDGES, robot_config::ENCODER_GEAR_RATIO,
-      robot_config::ENCODER_ALPHA,
       robot_config::ENCODER_QUEUE_SIZE); // motor1
   encoder_motor2_ = std::make_unique<EncoderSpeedMeter>(
       72, 0, sample_period, robot_config::ENCODER_PPR,
       robot_config::ENCODER_EDGES, robot_config::ENCODER_GEAR_RATIO,
-      robot_config::ENCODER_ALPHA,
       robot_config::ENCODER_QUEUE_SIZE); // motor2
 
-  if (!encoder_motor1_->start()) {
-    RCLCPP_ERROR(get_logger(), "Failed to start encoder for motor1 (GPIO 73)");
-  }
-  if (!encoder_motor2_->start()) {
-    RCLCPP_ERROR(get_logger(), "Failed to start encoder for motor2 (GPIO 72)");
-  }
+  encoder_motor1_->start();
+  encoder_motor2_->start();
+
+  // if (!encoder_motor1_->start()) {
+  //   RCLCPP_ERROR(get_logger(), "Failed to start encoder for motor1 (GPIO 73)");
+  // }
+  // if (!encoder_motor2_->start()) {
+  //   RCLCPP_ERROR(get_logger(), "Failed to start encoder for motor2 (GPIO 72)");
+  // }
 
   /* PID Init*/
   PID_Controller_Init(&motor1_pid_, 0.01, 0.1, 0.0, 1.0 / control_hz_, 0.02, 1.0); // *PID_Controller、kp、ki、kd、dt、i_limit、out_limit
@@ -87,10 +90,10 @@ PidCmdVelToMotor::~PidCmdVelToMotor() { close(sock_); }
 
 void PidCmdVelToMotor::cmdvel_callback(
     const geometry_msgs::msg::Twist::SharedPtr msg) {
-  std::lock_guard<std::mutex> lock(mutex_);
-  cur_v_ = msg->linear.x;
-  cur_w_ = msg->angular.z;
-  last_cmd_time_ = now();
+    std::lock_guard<std::mutex> lock(mutex_);
+    cur_v_ = msg->linear.x;
+    cur_w_ = msg->angular.z;
+    last_cmd_time_ = now();
 }
 
 void PidCmdVelToMotor::control_timer_callback() {
@@ -129,8 +132,8 @@ void PidCmdVelToMotor::send_cmd(double v, double w) {
   double motor2_pwm_ff = motor_model::motor2_model(dir_r, target_spd_r);
 
   // 获取实际轮速
-  double motor1_speed_feedback = encoder_motor1_->speed_rps();
-  double motor2_speed_feedback = encoder_motor2_->speed_rps();
+  double motor1_speed_feedback = encoder_motor1_->get_rps();
+  double motor2_speed_feedback = encoder_motor2_->get_rps();
   
   // 计算 PID
   double motor1_pwm_output = PID_FF_Update(&motor1_pid_, motor1_speed_feedback, motor1_pwm_ff); // 带前馈的PID

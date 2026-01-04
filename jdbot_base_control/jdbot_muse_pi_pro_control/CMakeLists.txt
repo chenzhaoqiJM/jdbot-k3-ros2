@@ -44,14 +44,15 @@ ament_target_dependencies(openloop_node
 add_executable(pid_ff_node
   src/pid_control/pid_ff_node.cpp
   src/pid_control/pid_cmdvel_to_motor.cpp
-  src/pid_control/pid_encoder.cpp
   src/pid_control/pid_controller.cpp
 
+  src/encoder/encoder_speed_meter.cpp
   src/motor_direction_ctrl.cpp
   src/motor_model.cpp
 )
 
 target_link_libraries(pid_ff_node
+  gpiodcxx
   gpiod
   lgpio
   nlohmann_json::nlohmann_json
