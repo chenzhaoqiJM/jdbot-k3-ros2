@@ -21,8 +21,9 @@ find_package(nlohmann_json REQUIRED)
 
 # openloop node
 add_executable(openloop_node
-  src/openloop_node.cpp
-  src/cmdvel_to_motor.cpp
+  src/openloop/openloop_node.cpp
+  src/openloop/cmdvel_to_motor.cpp
+  
   src/motor_direction_ctrl.cpp
   src/motor_model.cpp
 )
@@ -41,12 +42,13 @@ ament_target_dependencies(openloop_node
 
 # encoder node
 add_executable(pid_ff_node
-  src/pid_ff_node.cpp
-  src/pid_cmdvel_to_motor.cpp
+  src/pid_control/pid_ff_node.cpp
+  src/pid_control/pid_cmdvel_to_motor.cpp
+  src/pid_control/pid_encoder.cpp
+  src/pid_control/pid_controller.cpp
+
   src/motor_direction_ctrl.cpp
   src/motor_model.cpp
-  src/pid_encoder.cpp
-  src/pid_controller.cpp
 )
 
 target_link_libraries(pid_ff_node

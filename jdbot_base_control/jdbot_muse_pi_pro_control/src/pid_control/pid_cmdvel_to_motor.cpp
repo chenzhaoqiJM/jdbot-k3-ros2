@@ -1,9 +1,9 @@
 
-#include "jdbot_muse_pi_pro_control/motor_model.hpp"
-#include "jdbot_muse_pi_pro_control/robot_config.hpp"
+#include "motor_model.hpp"
+#include "robot_config.hpp"
 
-#include "pid_cmdvel_to_motor.hpp"
-#include "pid_encoder.hpp"
+#include "pid_control/pid_cmdvel_to_motor.hpp"
+#include "pid_control/pid_encoder.hpp"
 
 #include <cmath>
 #include <sys/socket.h>

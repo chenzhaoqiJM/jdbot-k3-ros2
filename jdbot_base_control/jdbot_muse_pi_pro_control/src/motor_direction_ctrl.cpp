@@ -1,5 +1,5 @@
-#include "jdbot_muse_pi_pro_control/motor_direction_ctrl.hpp"
-#include "jdbot_muse_pi_pro_control/robot_config.hpp"
+#include "motor_direction_ctrl.hpp"
+#include "robot_config.hpp"
 #include <stdexcept>
 
 using namespace robot_config;

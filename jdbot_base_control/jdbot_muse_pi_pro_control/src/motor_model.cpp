@@ -1,4 +1,4 @@
-#include "jdbot_muse_pi_pro_control/motor_model.hpp"
+#include "motor_model.hpp"
 
 namespace motor_model
 {

@@ -1,6 +1,6 @@
-#include "jdbot_muse_pi_pro_control/cmdvel_to_motor.hpp"
-#include "jdbot_muse_pi_pro_control/robot_config.hpp"
-#include "jdbot_muse_pi_pro_control/motor_model.hpp"
+#include "openloop/cmdvel_to_motor.hpp"
+#include "robot_config.hpp"
+#include "motor_model.hpp"
 
 #include <sys/socket.h>
 #include <sys/un.h>
