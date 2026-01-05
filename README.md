@@ -1,7 +1,9 @@
 # 安装依赖
 
 ```
-sudo apt install python3-zmq
+sudo apt install python3-zmq \
+libspdlog-dev libconsole-bridge-dev liborocos-kdl-dev nlohmann-json3-dev liblgpio-dev \
+liblttng-ust-dev libgpiod-dev
 ```
 
 

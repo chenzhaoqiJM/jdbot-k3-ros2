@@ -47,27 +47,33 @@ double EncoderSpeedMeter::get_rpm() const { return current_rps_.load() * 60.0; }
 void EncoderSpeedMeter::interrupt_loop() {
   std::string chip_path = "/dev/gpiochip" + std::to_string(chip_index_);
 
-  /* 1. 创建 chip 对象（成员） */
+  /* 1. 创建 chip 对象 */
   chip_ = std::make_unique<gpiod::chip>(chip_path);
 
-  /* 2. 获取 line（成员） */
-  line_ = std::make_unique<gpiod::line>(chip_->get_line(gpio_offset_));
+  /* 2. 获取 GPIO line */
+  auto line = chip_->get_line(gpio_offset_);
 
-  /* 3. 申请中断 */
-  line_->request({"encoder", gpiod::line_request::EVENT_BOTH_EDGES,
-                  gpiod::line_request::FLAG_BIAS_PULL_UP});
+  /* 3. 配置 line request (libgpiod 1.6.x API) */
+  gpiod::line_request req_config;
+  req_config.consumer = "encoder";
+  req_config.request_type = gpiod::line_request::EVENT_BOTH_EDGES;
 
-  /* 4. 中断循环 */
+  /* 4. 申请 line 监听边沿事件 */
+  line.request(req_config);
+
+  /* 5. 中断循环 */
   while (!stop_flag_) {
-    if (!line_->event_wait(std::chrono::milliseconds(100)))
+    // 等待事件，超时 100ms
+    if (!line.event_wait(std::chrono::milliseconds(100)))
       continue;
 
-    gpiod::line_event event = line_->event_read();
+    // 读取事件
+    auto event = line.event_read();
     handle_event(event);
   }
 
-  /* 5. 可选：显式释放（不写也行，RAII 会处理） */
-  line_.reset();
+  /* 6. 释放 line */
+  line.release();
   chip_.reset();
 }
 
