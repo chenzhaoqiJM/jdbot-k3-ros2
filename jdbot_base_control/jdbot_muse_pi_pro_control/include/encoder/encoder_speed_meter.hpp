@@ -48,6 +48,7 @@ private:
   unsigned int gpio_offset_;
   unsigned int chip_index_;
   std::unique_ptr<gpiod::chip> chip_;
+  std::unique_ptr<gpiod::line_request> line_request_;
 
   /* ---------- 参数 ---------- */
   double sample_period_;
@@ -75,7 +76,7 @@ private:
 
   /* ---------- 私有方法 ---------- */
   void interrupt_loop();
-  void handle_event(const gpiod::line_event &event);
+  void handle_event(const gpiod::edge_event &event);
   void sampler_loop();
   void processor_loop();
 };

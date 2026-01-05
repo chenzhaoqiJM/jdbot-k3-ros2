@@ -47,43 +47,48 @@ double EncoderSpeedMeter::get_rpm() const { return current_rps_.load() * 60.0; }
 void EncoderSpeedMeter::interrupt_loop() {
   std::string chip_path = "/dev/gpiochip" + std::to_string(chip_index_);
 
-  /* 1. 创建 chip 对象 */
+  /* 1. 创建 chip 对象 (libgpiod v2 API) */
   chip_ = std::make_unique<gpiod::chip>(chip_path);
 
-  /* 2. 获取 GPIO line */
-  auto line = chip_->get_line(gpio_offset_);
+  /* 2. 配置 line settings: 监听双边沿 */
+  gpiod::line_settings settings;
+  settings.set_edge_detection(gpiod::line::edge::BOTH);
 
-  /* 3. 配置 line request (libgpiod 1.6.x API) */
-  gpiod::line_request req_config;
-  req_config.consumer = "encoder";
-  req_config.request_type = gpiod::line_request::EVENT_BOTH_EDGES;
+  /* 3. 构建并执行 line request */
+  line_request_ = std::make_unique<gpiod::line_request>(
+      chip_->prepare_request()
+          .set_consumer("encoder")
+          .add_line_settings(gpio_offset_, settings)
+          .do_request());
 
-  /* 4. 申请 line 监听边沿事件 */
-  line.request(req_config);
+  /* 4. 创建事件缓冲区 */
+  gpiod::edge_event_buffer event_buffer(16);
 
   /* 5. 中断循环 */
   while (!stop_flag_) {
     // 等待事件，超时 100ms
-    if (!line.event_wait(std::chrono::milliseconds(100)))
+    if (!line_request_->wait_edge_events(std::chrono::milliseconds(100)))
       continue;
 
-    // 读取事件
-    auto event = line.event_read();
-    handle_event(event);
+    // 读取事件到缓冲区
+    std::size_t num_events = line_request_->read_edge_events(event_buffer);
+    for (std::size_t i = 0; i < num_events; ++i) {
+      handle_event(event_buffer.get_event(i));
+    }
   }
 
-  /* 6. 释放 line */
-  line.release();
+  /* 5. 释放资源 */
+  line_request_.reset();
   chip_.reset();
 }
 
 /* ================== 中断逻辑 ================== */
-void EncoderSpeedMeter::handle_event(const gpiod::line_event &event) {
+void EncoderSpeedMeter::handle_event(const gpiod::edge_event &event) {
   std::lock_guard<std::mutex> guard(lock_);
 
-  if (event.event_type == gpiod::line_event::RISING_EDGE) {
+  if (event.type() == gpiod::edge_event::event_type::RISING_EDGE) {
     has_rising_ = true;
-  } else if (event.event_type == gpiod::line_event::FALLING_EDGE) {
+  } else if (event.type() == gpiod::edge_event::event_type::FALLING_EDGE) {
     if (has_rising_) {
       pulse_count_++;
       has_rising_ = false;
