@@ -156,7 +156,7 @@ class IMUDriverNode(Node):
         # 打开串口
 
         try:
-            wt_imu = serial.Serial(port=port_name, baudrate=9600, timeout=0.5)
+            wt_imu = serial.Serial(port=port_name, baudrate=115200, timeout=0.5)
             if wt_imu.isOpen():
                 self.get_logger().info("\033[32mSerial port opened successfully...\033[0m")
             else:
@@ -186,30 +186,18 @@ class IMUDriverNode(Node):
                         tag = handle_serial_data(buff_data[i])
                         if tag:
                             self.imu_data()
-            
+
             cost_while = time.time() - t1
 
             if period - cost_while > 0:
                 time.sleep(period - cost_while)
 
     def imu_data(self):
-        accel_x, accel_y, accel_z = acceleration[0], acceleration[1], acceleration[2]  # struct.unpack('hhh', accel_raw)
-        # print("acceleration: ", acceleration)
-        accel_scale = 16 / 32768.0
-        accel_x, accel_y, accel_z = accel_x * accel_scale, accel_y * accel_scale, accel_z * accel_scale
-
-        # 读取陀螺仪数据
-        gyro_x, gyro_y, gyro_z = angularVelocity[0], angularVelocity[1], angularVelocity[
-            2]  # struct.unpack('hhh', gyro_raw)
-        gyro_scale = 2000 / 32768.0
-        gyro_x, gyro_y, gyro_z = math.radians(gyro_x * gyro_scale), math.radians(gyro_y * gyro_scale), math.radians(
-            gyro_z * gyro_scale)
-
-        # 计算角速度
-        dt = 0.01
-        wx, wy, wz = gyro_x, gyro_y, gyro_z
-        ax, ay, az = accel_x, accel_y, accel_z
-        roll, pitch, yaw = self.compute_orientation(wx, wy, wz, ax, ay, az, dt)
+        # 直接使用已在 handle_serial_data() 中正确转换的数据
+        # acceleration 已转换为 m/s² (/ 32768.0 * 16 * 9.8)
+        # angularVelocity 已转换为 rad/s (/ 32768.0 * 2000 * pi / 180)
+        accel_x, accel_y, accel_z = acceleration[0], acceleration[1], acceleration[2]
+        gyro_x, gyro_y, gyro_z = angularVelocity[0], angularVelocity[1], angularVelocity[2]
 
         # 更新IMU消息
         self.imu_msg.header.stamp = self.get_clock().now().to_msg()
@@ -229,28 +217,30 @@ class IMUDriverNode(Node):
         self.imu_msg.orientation.z = qua[2]
         self.imu_msg.orientation.w = qua[3]
 
+        # 填充协方差矩阵 (3x3 = 9个元素)
+        # 对角线设置合理的协方差值，非对角线为0
+        # orientation_covariance: 姿态估计不确定性 (rad²)
+        self.imu_msg.orientation_covariance = [
+            0.001, 0.0, 0.0,
+            0.0, 0.001, 0.0,
+            0.0, 0.0, 0.001
+        ]
+        # angular_velocity_covariance: 陀螺仪噪声 (rad/s)²
+        self.imu_msg.angular_velocity_covariance = [
+            0.001, 0.0, 0.0,
+            0.0, 0.001, 0.0,
+            0.0, 0.0, 0.001
+        ]
+        # linear_acceleration_covariance: 加速度计噪声 (m/s²)²
+        self.imu_msg.linear_acceleration_covariance = [
+            0.001, 0.0, 0.0,
+            0.0, 0.001, 0.0,
+            0.0, 0.0, 0.001
+        ]
+
         # 发布IMU消息
         self.imu_pub.publish(self.imu_msg)
 
-    def compute_orientation(self, wx, wy, wz, ax, ay, az, dt):
-        # 计算旋转矩阵
-        Rx = np.array([[1, 0, 0],
-                       [0, math.cos(ax), -math.sin(ax)],
-                       [0, math.sin(ax), math.cos(ax)]])
-        Ry = np.array([[math.cos(ay), 0, math.sin(ay)],
-                       [0, 1, 0],
-                       [-math.sin(ay), 0, math.cos(ay)]])
-        Rz = np.array([[math.cos(wz), -math.sin(wz), 0],
-                       [math.sin(wz), math.cos(wz), 0],
-                       [0, 0, 1]])
-        R = Rz.dot(Ry).dot(Rx)
-
-        # 计算欧拉角
-        roll = math.atan2(R[2][1], R[2][2])
-        pitch = math.atan2(-R[2][0], math.sqrt(R[2][1] ** 2 + R[2][2] ** 2))
-        yaw = math.atan2(R[1][0], R[0][0])
-
-        return roll, pitch, yaw
 
 
 def main():
