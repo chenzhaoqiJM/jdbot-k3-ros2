@@ -63,6 +63,14 @@ def generate_launch_description():
                    'base_link', 'camera_link'],
     )
 
+    tf2_node_imu = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='tf_pub_base_to_imu',
+        arguments=['0.0', '0.0', '0.01', '0', '0.0', '0.0',
+                   'base_link', 'imu_link'],
+    )
+
     # ================== 底盘里程计节点 ==================
     drive_node = Node(
         package='jdbot_base_bringup',
@@ -84,6 +92,7 @@ def generate_launch_description():
 
         tf2_node_base,
         tf2_node_laser,
+        tf2_node_imu,
         tf2_node_rgbd,
         drive_node,
     ])
