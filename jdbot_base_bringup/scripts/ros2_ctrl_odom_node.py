@@ -14,7 +14,7 @@ from tf2_ros import TransformBroadcaster
 
 # ================== 底盘参数 ==================
 WHEEL_DIAMETER = 0.067    # m
-WHEEL_BASE = 0.33         # m
+WHEEL_BASE = 0.181         # m
 
 
 class CmdVelToSerial(Node):
@@ -27,6 +27,8 @@ class CmdVelToSerial(Node):
         self.declare_parameter('baudrate', 115200)
         self.declare_parameter('send_hz', 20.0)
         self.declare_parameter('cmd_vel_timeout', 0.4)
+        self.declare_parameter('motor1_factor', 1.0)
+        self.declare_parameter('motor2_factor', 1.0)
 
         # ===== odom 参数（新增）=====
         self.declare_parameter('publish_tf', True)
@@ -38,6 +40,9 @@ class CmdVelToSerial(Node):
         baud = self.get_parameter('baudrate').value
         self.send_hz = self.get_parameter('send_hz').value
         self.timeout = self.get_parameter('cmd_vel_timeout').value
+
+        self.motor1_factor = self.get_parameter('motor1_factor').value
+        self.motor2_factor = self.get_parameter('motor2_factor').value
 
         self.publish_tf = self.get_parameter('publish_tf').value
         self.odom_topic = self.get_parameter('odom_topic').value
@@ -130,6 +135,8 @@ class CmdVelToSerial(Node):
         dir_l, spd_l = self.wheel_speed_to_cmd(v_l)
         dir_r, spd_r = self.wheel_speed_to_cmd(v_r)
 
+        spd_l = spd_l * self.motor1_factor
+        spd_r = spd_r * self.motor2_factor
         cmd = f"{dir_l},{spd_l:.2f};{dir_r},{spd_r:.2f}\n"
         self.ser.write(cmd.encode())
 

@@ -14,6 +14,9 @@ def generate_launch_description():
     odom_frame = LaunchConfiguration('odom_frame')
     base_frame = LaunchConfiguration('base_frame')
 
+    motor1_factor = LaunchConfiguration('motor1_factor')
+    motor2_factor = LaunchConfiguration('motor2_factor')
+
     declare_publish_tf = DeclareLaunchArgument(
         'publish_tf',
         default_value='true',
@@ -38,6 +41,18 @@ def generate_launch_description():
         description='Base frame id'
     )
 
+    declare_motor1_factor = DeclareLaunchArgument(
+        'motor1_factor',
+        default_value='1.0',
+        description='motor1_factor for speed'
+    )
+
+    declare_motor2_factor = DeclareLaunchArgument(
+        'motor2_factor',
+        default_value='1.0',
+        description='motor2_factor for speed'
+    )
+
     # ================== TF 静态变换 ==================
     tf2_node_base = Node(
         package='tf2_ros',
@@ -51,16 +66,8 @@ def generate_launch_description():
         package='tf2_ros',
         executable='static_transform_publisher',
         name='tf_pub_base_to_laser',
-        arguments=['0.0', '-0.03', '0.10', '0', '0.0', '0.0',
+        arguments=['0.03', '0.0', '0.20', '3.14159', '0.0', '0.0',
                    'base_link', 'laser_link'],
-    )
-
-    tf2_node_rgbd = Node(
-        package='tf2_ros',
-        executable='static_transform_publisher',
-        name='static_tf_pub_rgbd',
-        arguments=['0.15', '0', '0.06', '0.0', '0.0', '0.0',
-                   'base_link', 'camera_link'],
     )
 
     tf2_node_imu = Node(
@@ -69,6 +76,14 @@ def generate_launch_description():
         name='tf_pub_base_to_imu',
         arguments=['0.0', '0.0', '0.01', '0', '0.0', '0.0',
                    'base_link', 'imu_link'],
+    )
+
+    tf2_node_rgbd = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='static_tf_pub_rgbd',
+        arguments=['0.15', '0', '0.06', '0.0', '0.0', '0.0',
+                   'base_link', 'camera_link'],
     )
 
     # ================== 底盘里程计节点 ==================
@@ -81,6 +96,8 @@ def generate_launch_description():
             'odom_topic': odom_topic,
             'odom_frame': odom_frame,
             'base_frame': base_frame,
+            'motor1_factor':motor1_factor,
+            'motor2_factor':motor2_factor
         }]
     )
 
@@ -89,6 +106,8 @@ def generate_launch_description():
         declare_odom_topic,
         declare_odom_frame,
         declare_base_frame,
+        declare_motor1_factor,
+        declare_motor2_factor,
 
         tf2_node_base,
         tf2_node_laser,
