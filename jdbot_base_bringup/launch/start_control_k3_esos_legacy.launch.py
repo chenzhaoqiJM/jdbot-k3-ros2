@@ -52,13 +52,13 @@ def generate_launch_description():
 
     declare_wheel_radius = DeclareLaunchArgument(
         'wheel_radius',
-        default_value='0.05',
+        default_value='0.0335',
         description='Wheel radius in meters'
     )
 
     declare_wheel_base = DeclareLaunchArgument(
         'wheel_base',
-        default_value='0.2',
+        default_value='0.28',
         description='Wheel base (distance between wheels) in meters'
     )
 

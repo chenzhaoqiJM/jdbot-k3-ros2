@@ -18,10 +18,10 @@ constexpr uint32_t RPMSG_REMOTE_ADDR = 1002;  // RCPU 端地址
 /* ================== 运动学参数 ================== */
 
 // 轮半径 (m)
-constexpr double WHEEL_RADIUS = 0.05;
+constexpr double WHEEL_RADIUS = 0.067;
 
 // 轮距 (m)
-constexpr double WHEEL_BASE = 0.2;
+constexpr double WHEEL_BASE = 0.28;
 
 // 减速比
 constexpr double GEAR_RATIO = 56.0;
