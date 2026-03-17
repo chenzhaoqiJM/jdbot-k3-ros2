@@ -10,7 +10,7 @@ liblttng-ust-dev libgpiod-dev
 # 安装 YDLIDAR SDK
 
 ```
-git clone https://github.com/YDLIDAR/YDLidar-SDK.git
+git clone https://github.com/chenzhaoqiJM/YDLidar-SDK.git
 cd YDLidar-SDK
 mkdir build && cd build
 cmake ..
