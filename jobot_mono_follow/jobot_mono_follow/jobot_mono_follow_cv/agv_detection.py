@@ -1,7 +1,12 @@
 import cv2
 import numpy as np
 import onnxruntime as ort
-import spacemit_ort
+try:
+    import spacemit_ort  # noqa: F401
+    HAS_SPACEMIT_ORT = True
+except ImportError:
+    spacemit_ort = None
+    HAS_SPACEMIT_ORT = False
 import threading
 import queue
 
@@ -23,7 +28,27 @@ class AGVDetection:
         session_options.intra_op_num_threads = 2
 
         # 加载 ONNX 模型
-        session = ort.InferenceSession(self.model_path,sess_options=session_options, providers=["SpaceMITExecutionProvider"])
+        providers = ["CPUExecutionProvider"]
+        if HAS_SPACEMIT_ORT:
+            try:
+                available_providers = ort.get_available_providers()
+                if "SpaceMITExecutionProvider" in available_providers:
+                    providers = ["SpaceMITExecutionProvider", "CPUExecutionProvider"]
+            except Exception:
+                providers = ["CPUExecutionProvider"]
+
+        try:
+            session = ort.InferenceSession(
+                self.model_path,
+                sess_options=session_options,
+                providers=providers,
+            )
+        except Exception:
+            session = ort.InferenceSession(
+                self.model_path,
+                sess_options=session_options,
+                providers=["CPUExecutionProvider"],
+            )
 
         return session
 
@@ -48,14 +73,14 @@ class AGVDetection:
         # 后处理
         dets = self.postprocess(image, output, anchors, offset, self.class_conf,self.input_size)
         dets = self.nms(dets)
-        
+
         dets_np = np.array(dets)
         filtered_dets = dets_np[dets_np[:, 4] == 0]
         new_dets = np.delete(filtered_dets, 4, axis=1)
 
-        
+
         return new_dets
-    
+
     def infer(self,image):
         img = image.copy()
 
@@ -74,8 +99,8 @@ class AGVDetection:
         # 保留第五个元素（索引为 4）为 0 的成员
         filtered_dets = [item for item in dets if item[4] == 0]
         # 去除第5个维度和第6个维度
-        new_dets = [[val for i, val in enumerate(item) if i not in [4, 5]] for item in filtered_dets]       
-        
+        new_dets = [[val for i, val in enumerate(item) if i not in [4, 5]] for item in filtered_dets]
+
         return new_dets
 
 
@@ -97,7 +122,7 @@ class AGVDetection:
         top, bottom = int(round(dh - 0.1)), int(round(dh + 0.1))
         left, right = int(round(dw - 0.1)), int(round(dw + 0.1))
         image = cv2.copyMakeBorder(image, top, bottom, left, right, cv2.BORDER_CONSTANT, value=pad_color)  # add border
-        
+
         # 归一化处理
         # image = image.astype(np.float32) / 255.0
         image = cv2.normalize(image, None, 0.0, 1.0, cv2.NORM_MINMAX, dtype=cv2.CV_32F)
@@ -106,7 +131,7 @@ class AGVDetection:
         image = np.expand_dims(image, axis=0)
 
         return image
-    
+
     def postprocess(self,image,output, anchors, offset, conf_threshold,input_size=(320,320)):
         # 获取图像的高和宽
         shape = image.shape[:2]
@@ -154,14 +179,14 @@ class AGVDetection:
         y2 = np.maximum(0, ((valid_center_y + half_height) - dh) / r).astype(int)
 
         # 组合结果
-        objects = np.column_stack((x1, y1, x2, y2, valid_max_prob_indices, valid_max_probs)).tolist()            
-        
+        objects = np.column_stack((x1, y1, x2, y2, valid_max_prob_indices, valid_max_probs)).tolist()
+
         return objects
-    
+
     def nms(self,dets):
         if len(dets) == 0:
             return np.empty((0, 6))
-        
+
         dets_array = np.array(dets)
         # 按类别分组
         unique_labels = np.unique(dets_array[:, 4])
@@ -223,25 +248,25 @@ class AGVDetection:
     def draw_result(self,image,outputs,tid,results):
         img = image.copy()
 
-        x1,y1,x2,y2 = outputs[0][0:4]    
+        x1,y1,x2,y2 = outputs[0][0:4]
         # 绘制矩形框
         cv2.rectangle(img, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)
-        
+
         # 创建文本字符串：标签和置信度
-        
+
         text = f"id{tid},{results[2][0]}: {results[3][0]:.2f}"
-        
+
         # 获取文本尺寸
         ((text_width, text_height), _) = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
-        
+
         # 计算文本框的坐标，并确保它不会超出图像边界
         text_offset_x = int(max(x1, 0))
         text_offset_y = int(min(y1- 5, image.shape[0] - text_height - 5) )
-        
+
         # 显示文本
         cv2.putText(img, text, (text_offset_x, text_offset_y + int(1.3 * text_height)),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), thickness=1)
-        
+
         return img
 
 
@@ -253,41 +278,3 @@ class AGVDetection:
             new_rect = ((x1, y1), width, height, label, prob)
             converted_list.append(new_rect)
         return converted_list
-    
-
-
-
-class DetectionThread(threading.Thread):
-    def __init__(self, result_queue, model_path):
-        threading.Thread.__init__(self)
-        self.result_queue = result_queue
-        self.detector = AGVDetection(model_path)
-        self.cap = cv2.VideoCapture(1)  
-        self.running = True
-
-    def run(self):
-        while self.running:
-            ret, frame = self.cap.read()
-            if ret:
-                detections = self.detector.infer(frame)
-                if detections:
-                    height, width, _ = frame.shape
-                    center_x = width // 2
-                    center_y = height // 2
-                    min_distance = float('inf')
-                    closest_box = None
-                    for det in detections:
-                        x1, y1, x2, y2 = det
-                        center = ((x1 + x2) // 2, (y1 + y2) // 2)
-                        distance = ((center[0] - center_x) ** 2 + (center[1] - center_y) ** 2) ** 0.5
-                        if distance < min_distance:
-                            min_distance = distance
-                            closest_box = det
-                    if closest_box:
-                        self.result_queue.put(closest_box)
-            else:
-                break
-
-    def stop(self):
-        self.running = False
-        self.cap.release()

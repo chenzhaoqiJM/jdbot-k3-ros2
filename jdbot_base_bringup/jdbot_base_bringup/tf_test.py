@@ -17,12 +17,22 @@ class TFMonitor(Node):
 
     def on_timer(self):
         try:
+            map_to_odom = self.buffer.lookup_transform(
+                'map',
+                'odom',
+                rclpy.time.Time()
+            )
+
             # 直接查 map → base_footprint 的 TF
             trans = self.buffer.lookup_transform(
                 'map',
                 'base_footprint',
                 rclpy.time.Time()
             )
+
+            odom_x = map_to_odom.transform.translation.x
+            odom_y = map_to_odom.transform.translation.y
+            odom_z = map_to_odom.transform.translation.z
 
             x = trans.transform.translation.x
             y = trans.transform.translation.y
@@ -40,7 +50,9 @@ class TFMonitor(Node):
             self.last_xyz = (x, y, z)
 
             self.get_logger().info(
-                f"XYZ: ({x:.3f}, {y:.3f}, {z:.3f}) | ΔXYZ: ({dx:.3f}, {dy:.3f}, {dz:.3f})"
+                f"map→odom: ({odom_x:.3f}, {odom_y:.3f}, {odom_z:.3f}) | "
+                f"map→base_footprint XYZ: ({x:.3f}, {y:.3f}, {z:.3f}) | "
+                f"ΔXYZ: ({dx:.3f}, {dy:.3f}, {dz:.3f})"
             )
 
         except Exception as e:

@@ -14,7 +14,6 @@ from rclpy.node import Node
 from sensor_msgs.msg import Image, CompressedImage
 from geometry_msgs.msg import Twist
 
-from jobot_perception_utils_py.cv_bridge import CvBridge
 
 from std_msgs.msg import Int32
 from rclpy.executors import MultiThreadedExecutor
@@ -33,6 +32,7 @@ sys.path.append(current_dir)
 # ours
 from jobot_mono_follow_cv import AGVDetection
 from downloader import ModelDownloader
+from cv_bridge import CvBridge
 
 # 跟踪控制节点
 class FollowControl(Node):
@@ -93,13 +93,13 @@ class FollowControl(Node):
                 try:
                     _ = self.infer_queue.get_nowait()
                 except queue.Empty:
-                    pass 
+                    pass
 
             if self.img_queue.full():
                 try:
                     _ = self.img_queue.get_nowait()
                 except queue.Empty:
-                    pass 
+                    pass
 
             self.infer_queue.put_nowait(cv_image)
             self.img_queue.put_nowait(cv_image)
@@ -164,14 +164,14 @@ class MyDetectionThread(threading.Thread):
                         if distance < min_distance:
                             min_distance = distance
                             closest_box = det
-                        
+
                     if closest_box:
                         self.result_queue.put(closest_box)
 
                         if self.publish_result_img:
                             x1, y1, x2, y2 = closest_box
                             cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), (0, 0, 255), 5)
-                
+
                 if self.publish_result_img:
                     self.follow_control.publish_compressed_img(frame)
             else:
@@ -200,7 +200,7 @@ def main():
 
     executor_thread = threading.Thread(target=run_executor, args=(executor,), daemon=True)
     executor_thread.start()
-   
+
     # 目标检测线程
     result_queue = queue.Queue(maxsize=2)
     model_path = os.path.expanduser('~/.brdk_models/jobot_mono_follow/yolov8n.q.onnx')
@@ -225,7 +225,7 @@ def main():
         angular_z_set = follow_control.angular_z_set
 
         while rclpy.ok():
-            
+
             with follow_control.lock:
                 follow_me_flag = follow_control.ai_enabled
 
@@ -242,7 +242,7 @@ def main():
                     for i in range(0, 3):
                         follow_control.publish_velocity(0.0, 0.0)  # 停止小车
                         time.sleep(0.01)
-                
+
                 time.sleep(0.02)
                 continue
 
@@ -256,7 +256,7 @@ def main():
                         time.sleep(0.01)
                 time.sleep(0.02)
                 continue
-            
+
             # 始终跟踪上一次框
             cmd_x_z = [0.0, 0.0]
             if len(closest_box) == 4:
@@ -285,12 +285,12 @@ def main():
                 # 更新速度
                 cmd_x_z = [linear_x, angular_z]
 
-            # 发布速度 
+            # 发布速度
             follow_control.publish_velocity(cmd_x_z[0], cmd_x_z[1])
 
             count += 1
             elapsed_time = time.time() - start_time  # 计算运行时间
-            
+
             if elapsed_time >= 1.0:  # 每秒打印一次
                 frequency = count / elapsed_time
                 # print(f"循环频率: {frequency:.2f} 次/秒")
@@ -299,12 +299,12 @@ def main():
                 start_time = time.time()  # 重新计时
 
             time.sleep(0.003)
-                
+
     except KeyboardInterrupt:
         print("停止检测线程...")
         detection_thread.stop()  # 先停止线程
         # detection_thread.join()  # 等待线程退出
-        
+
         print("停止机器人...")
         follow_control.publish_velocity(0.0, 0.0)  # 停止小车
         time.sleep(0.2)
@@ -315,7 +315,7 @@ def main():
         follow_control.publish_velocity(0.0, 0.0)  # 停止小车
         time.sleep(0.2)
         rclpy.shutdown()
-  
+
 
 
 if __name__ == '__main__':
