@@ -1,3 +1,3 @@
-from .agv_detection import AGVDetection, DetectionThread
+from .agv_detection import AGVDetection
 
-__all__ = ["AGVDetection", "DetectionThread"]
+__all__ = ["AGVDetection"]

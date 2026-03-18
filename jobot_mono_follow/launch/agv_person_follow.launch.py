@@ -13,9 +13,19 @@ def generate_launch_description():
             description='Whether to publish the image'),
 
         DeclareLaunchArgument(
-            'video_device',
-            default_value='/dev/video20',
-            description='Video device'),
+            'sub_image_topic',
+            default_value='/image_raw',
+            description='Video stream'),
+
+        DeclareLaunchArgument(
+            'linear_x',
+            default_value='0.4',
+            description='linear_x speed'),
+
+        DeclareLaunchArgument(
+            'angular_z',
+            default_value='0.37',
+            description='angular_z speed'),
 
         Node(
             package='jobot_mono_follow',
@@ -24,7 +34,9 @@ def generate_launch_description():
             output='screen',
             parameters=[
                 {'publish_result_img': LaunchConfiguration('publish_result_img')},
-                {'video_device': LaunchConfiguration('video_device')},
+                {'sub_image_topic': LaunchConfiguration('sub_image_topic')},
+                {'linear_x': LaunchConfiguration('linear_x')},
+                {'angular_z': LaunchConfiguration('angular_z')},
             ],
             additional_env={'PYTHONUNBUFFERED': '1'}
         ),
