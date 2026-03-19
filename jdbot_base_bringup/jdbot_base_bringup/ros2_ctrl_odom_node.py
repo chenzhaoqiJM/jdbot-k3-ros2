@@ -14,7 +14,7 @@ from tf2_ros import TransformBroadcaster
 
 # ================== 底盘参数 ==================
 WHEEL_DIAMETER = 0.067    # m
-WHEEL_BASE = 0.33         # m
+WHEEL_BASE = 0.183         # m
 
 
 class CmdVelToSerial(Node):
