@@ -28,7 +28,8 @@ setup(
     entry_points={
         'console_scripts': [
             'hello_node = jobot_mono_follow.hello_node:main',
-            'agv_follow_node = jobot_mono_follow.agv_follow_node:main'
+            'agv_follow_node = jobot_mono_follow.agv_follow_node:main',
+            'agv_follow_node_old = jobot_mono_follow.agv_follow_node_old:main'
         ],
     },
 )
