@@ -16,6 +16,8 @@ def generate_launch_description():
 
     motor1_factor = LaunchConfiguration('motor1_factor')
     motor2_factor = LaunchConfiguration('motor2_factor')
+    wheel_diameter = LaunchConfiguration('wheel_diameter')
+    wheel_base = LaunchConfiguration('wheel_base')
 
     declare_publish_tf = DeclareLaunchArgument(
         'publish_tf',
@@ -51,6 +53,18 @@ def generate_launch_description():
         'motor2_factor',
         default_value='1.0',
         description='motor2_factor for speed'
+    )
+
+    declare_wheel_diameter = DeclareLaunchArgument(
+        'wheel_diameter',
+        default_value='0.067',
+        description='Wheel diameter in meters'
+    )
+
+    declare_wheel_base = DeclareLaunchArgument(
+        'wheel_base',
+        default_value='0.183',
+        description='Wheel base (distance between wheels) in meters'
     )
 
     # ================== TF 静态变换 ==================
@@ -97,7 +111,9 @@ def generate_launch_description():
             'odom_frame': odom_frame,
             'base_frame': base_frame,
             'motor1_factor':motor1_factor,
-            'motor2_factor':motor2_factor
+            'motor2_factor':motor2_factor,
+            'wheel_diameter': wheel_diameter,
+            'wheel_base': wheel_base,
         }]
     )
 
@@ -108,6 +124,8 @@ def generate_launch_description():
         declare_base_frame,
         declare_motor1_factor,
         declare_motor2_factor,
+        declare_wheel_diameter,
+        declare_wheel_base,
 
         tf2_node_base,
         tf2_node_laser,

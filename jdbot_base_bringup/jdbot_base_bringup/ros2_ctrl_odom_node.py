@@ -12,9 +12,9 @@ from geometry_msgs.msg import Twist, TransformStamped
 from nav_msgs.msg import Odometry
 from tf2_ros import TransformBroadcaster
 
-# ================== 底盘参数 ==================
-WHEEL_DIAMETER = 0.067    # m
-WHEEL_BASE = 0.183         # m
+# ================== 底盘默认参数 ==================
+DEFAULT_WHEEL_DIAMETER = 0.067    # m
+DEFAULT_WHEEL_BASE = 0.183        # m
 
 
 class CmdVelToSerial(Node):
@@ -27,6 +27,8 @@ class CmdVelToSerial(Node):
         self.declare_parameter('baudrate', 115200)
         self.declare_parameter('send_hz', 20.0)
         self.declare_parameter('cmd_vel_timeout', 0.4)
+        self.declare_parameter('wheel_diameter', DEFAULT_WHEEL_DIAMETER)
+        self.declare_parameter('wheel_base', DEFAULT_WHEEL_BASE)
 
         # ===== odom 参数（新增）=====
         self.declare_parameter('publish_tf', True)
@@ -38,6 +40,8 @@ class CmdVelToSerial(Node):
         baud = self.get_parameter('baudrate').value
         self.send_hz = self.get_parameter('send_hz').value
         self.timeout = self.get_parameter('cmd_vel_timeout').value
+        self.wheel_diameter = self.get_parameter('wheel_diameter').value
+        self.wheel_base = self.get_parameter('wheel_base').value
 
         self.publish_tf = self.get_parameter('publish_tf').value
         self.odom_topic = self.get_parameter('odom_topic').value
@@ -124,8 +128,8 @@ class CmdVelToSerial(Node):
     # 串口发送
     # =====================================================
     def send_cmd(self, v, w):
-        v_l = v - w * WHEEL_BASE / 2.0
-        v_r = v + w * WHEEL_BASE / 2.0
+        v_l = v - w * self.wheel_base / 2.0
+        v_r = v + w * self.wheel_base / 2.0
 
         dir_l, spd_l = self.wheel_speed_to_cmd(v_l)
         dir_r, spd_r = self.wheel_speed_to_cmd(v_r)
@@ -138,7 +142,7 @@ class CmdVelToSerial(Node):
             return 0, 0.0
 
         direction = 1 if v > 0 else 2
-        speed = abs(v) / (math.pi * WHEEL_DIAMETER)
+        speed = abs(v) / (math.pi * self.wheel_diameter)
         return direction, speed
 
     # =====================================================
@@ -195,7 +199,7 @@ class CmdVelToSerial(Node):
             speed = 0.0
 
         # 转/s → m/s
-        return speed * math.pi * WHEEL_DIAMETER
+        return speed * math.pi * self.wheel_diameter
 
     # =====================================================
     # odom 定时发布（新增）
@@ -212,7 +216,7 @@ class CmdVelToSerial(Node):
             v_r = self.v_r
 
         v = (v_r + v_l) / 2.0
-        w = (v_r - v_l) / WHEEL_BASE
+        w = (v_r - v_l) / self.wheel_base
 
         self.yaw += w * dt
         self.x += v * math.cos(self.yaw) * dt
