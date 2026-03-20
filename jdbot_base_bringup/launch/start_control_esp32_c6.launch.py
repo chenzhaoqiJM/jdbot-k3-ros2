@@ -76,6 +76,14 @@ def generate_launch_description():
                    'base_footprint', 'base_link'],
     )
 
+    tf2_node_3d_laser = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='tf_pub_base_to_hesai_lidar',
+        arguments=['0.01', '0.0', '0.25', '0.0', '0.0', '0.0',
+                   'base_link', 'hesai_lidar'],
+    )
+
     tf2_node_laser = Node(
         package='tf2_ros',
         executable='static_transform_publisher',
@@ -128,6 +136,7 @@ def generate_launch_description():
         declare_wheel_base,
 
         tf2_node_base,
+        tf2_node_3d_laser,
         tf2_node_laser,
         tf2_node_imu,
         tf2_node_rgbd,
