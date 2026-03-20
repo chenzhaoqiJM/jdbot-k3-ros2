@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Stream | 视频流</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            position: relative;
+            width: 100%;
+            height: 90vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        img {
+            max-width: 100%;
+            max-height: 90%;
+            object-fit: contain;
+            display: block;
+        }
+
+        .footer {
+            margin-top: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            text-align: center;
+        }
+
+        .error-message {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 0, 0, 0.1);
+            padding: 20px;
+            border-radius: 5px;
+            text-align: center;
+            color: #ff0000;
+        }
+
+        .language-switch {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 5px 10px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <button class="language-switch" onclick="toggleLanguage()">中文/English</button>
+
+    <div class="container">
+        <img id="video" src="" alt="Video Stream">
+        <div class="error-message" id="errorMessage"></div>
+    </div>
+
+    <div class="footer">
+        <span id="footerText">Jintie Space Robot</span>
+    </div>
+
+    <script>
+        let currentLang = 'en';
+        const translations = {
+            en: {
+                title: 'Video Stream',
+                footer: 'SpacemiT Robot',
+                connecting: 'Connecting to video stream...',
+                connectionError: 'Connection error. Attempting to reconnect...',
+                noVideo: 'No video signal'
+            },
+            zh: {
+                title: '视频流',
+                footer: '进迭时空机器人',
+                connecting: '正在连接视频流...',
+                connectionError: '连接错误，正在尝试重新连接...',
+                noVideo: '无视频信号'
+            }
+        };
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'en' ? 'zh' : 'en';
+            updateTexts();
+        }
+
+        function updateTexts() {
+            document.title = translations[currentLang].title;
+            document.getElementById('footerText').textContent = translations[currentLang].footer;
+            if (document.getElementById('errorMessage').style.display === 'block') {
+                document.getElementById('errorMessage').textContent = translations[currentLang].connectionError;
+            }
+        }
+
+        function connectWebSocket() {
+            const ws = new WebSocket("ws://{{HOST_IP}}:{{PORT}}");
+            const video = document.getElementById("video");
+            const errorMessage = document.getElementById("errorMessage");
+
+            ws.onopen = () => {
+                errorMessage.style.display = 'none';
+            };
+
+            ws.onmessage = (event) => {
+                video.src = "data:image/jpeg;base64," + event.data;
+                errorMessage.style.display = 'none';
+            };
+
+            ws.onerror = () => {
+                errorMessage.textContent = translations[currentLang].connectionError;
+                errorMessage.style.display = 'block';
+            };
+
+            ws.onclose = () => {
+                errorMessage.textContent = translations[currentLang].connectionError;
+                errorMessage.style.display = 'block';
+                setTimeout(connectWebSocket, 5000); // Attempt to reconnect after 5 seconds
+            };
+        }
+
+        // Initial connection
+        connectWebSocket();
+        updateTexts();
+    </script>
+</body>
+</html>
