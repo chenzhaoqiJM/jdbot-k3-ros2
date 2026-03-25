@@ -31,6 +31,7 @@ class CmdVelToSerial(Node):
         self.declare_parameter('wheel_base', DEFAULT_WHEEL_BASE)
         self.declare_parameter('motor1_factor', 1.0)
         self.declare_parameter('motor2_factor', 1.0)
+        self.declare_parameter('feedback_pwm_deadzone', 90)
 
         # ===== odom 参数（新增）=====
         self.declare_parameter('publish_tf', True)
@@ -41,6 +42,7 @@ class CmdVelToSerial(Node):
 
         self.motor1_factor = self.get_parameter('motor1_factor').value
         self.motor2_factor = self.get_parameter('motor2_factor').value
+        self.feedback_pwm_deadzone = self.get_parameter('feedback_pwm_deadzone').value
 
         port = self.get_parameter('serial_port').value
         baud = self.get_parameter('baudrate').value
@@ -201,8 +203,12 @@ class CmdVelToSerial(Node):
 
     def parse_motor(self, s: str) -> float:
         items = s.split(',')
+        pwm = int(items[-1])
         speed = float(items[-3])           # 转/s
         direction = int(items[-2])          # 0 / 1 / 2
+
+        if abs(pwm) < self.feedback_pwm_deadzone:
+            return 0.0
 
         if direction == 2:
             speed = -speed
