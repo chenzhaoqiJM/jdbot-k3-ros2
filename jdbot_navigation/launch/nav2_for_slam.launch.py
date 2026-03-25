@@ -18,8 +18,8 @@ def generate_launch_description():
     param_file = LaunchConfiguration('params', default=os.path.join(param_dir, param_file_name))
 
     # for slam
-    slam_bringup_dir = get_package_share_directory('slam_gmapping')
-    slam_launch_file = os.path.join(slam_bringup_dir, 'launch', 'slam_gmapping.launch.py')
+    slam_bringup_dir = get_package_share_directory('jdbot_slam')
+    slam_launch_file = os.path.join(slam_bringup_dir, 'launch', 'online_async_launch.py')
 
     return LaunchDescription([
         DeclareLaunchArgument(

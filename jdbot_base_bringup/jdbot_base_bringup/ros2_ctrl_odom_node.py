@@ -212,8 +212,8 @@ class CmdVelToSerial(Node):
 
         if direction == 2:
             speed = -speed
-        elif direction == 0:
-            speed = 0.0
+        # elif direction == 0:
+        #     speed = 0.0
 
         # 转/s → m/s
         return speed * math.pi * self.wheel_diameter
