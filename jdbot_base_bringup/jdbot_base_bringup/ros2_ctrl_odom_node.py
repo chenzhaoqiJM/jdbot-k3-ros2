@@ -29,12 +29,18 @@ class CmdVelToSerial(Node):
         self.declare_parameter('cmd_vel_timeout', 0.4)
         self.declare_parameter('wheel_diameter', DEFAULT_WHEEL_DIAMETER)
         self.declare_parameter('wheel_base', DEFAULT_WHEEL_BASE)
+        self.declare_parameter('motor1_factor', 1.0)
+        self.declare_parameter('motor2_factor', 1.0)
 
         # ===== odom 参数（新增）=====
         self.declare_parameter('publish_tf', True)
         self.declare_parameter('odom_topic', 'odom')
         self.declare_parameter('odom_frame', 'odom')
         self.declare_parameter('base_frame', 'base_footprint')
+
+
+        self.motor1_factor = self.get_parameter('motor1_factor').value
+        self.motor2_factor = self.get_parameter('motor2_factor').value
 
         port = self.get_parameter('serial_port').value
         baud = self.get_parameter('baudrate').value
@@ -134,6 +140,9 @@ class CmdVelToSerial(Node):
         dir_l, spd_l = self.wheel_speed_to_cmd(v_l)
         dir_r, spd_r = self.wheel_speed_to_cmd(v_r)
 
+        spd_l = spd_l * self.motor1_factor
+        spd_r = spd_r * self.motor2_factor
+
         cmd = f"{dir_l},{spd_l:.2f};{dir_r},{spd_r:.2f}\n"
         self.ser.write(cmd.encode())
 
@@ -180,6 +189,8 @@ class CmdVelToSerial(Node):
 
             v_l = self.parse_motor(left)
             v_r = self.parse_motor(right)
+
+            self.get_logger().info(f"left:{left}, right:{right}")
 
             with self.lock:
                 self.v_l = v_l
