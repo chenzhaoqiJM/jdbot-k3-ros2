@@ -10,16 +10,19 @@ def generate_launch_description():
     use_sim_time = LaunchConfiguration('use_sim_time', default='false')
 
     # for navigation
-    br_nav_dir = get_package_share_directory('jdbot_navigation')
-    br_nav_launchr = os.path.join(br_nav_dir, 'launch')
+    myrobot_nav_dir = get_package_share_directory('jdbot_navigation')
+    myrobot_nav_launchr = os.path.join(myrobot_nav_dir, 'launch')
+
+    nav2_launch_dir = os.path.join(get_package_share_directory('nav2_bringup'), 'launch')
 
     param_file_name = 'jdbot_diff_mpc.yaml'
-    param_dir = os.path.join(br_nav_dir, 'config')
+    param_dir = os.path.join(myrobot_nav_dir, 'config')
     param_file = LaunchConfiguration('params', default=os.path.join(param_dir, param_file_name))
 
     # for slam
     slam_bringup_dir = get_package_share_directory('jdbot_slam')
     slam_launch_file = os.path.join(slam_bringup_dir, 'launch', 'online_async_launch.py')
+
 
     return LaunchDescription([
         DeclareLaunchArgument(
@@ -34,7 +37,7 @@ def generate_launch_description():
 
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
-                [br_nav_launchr, '/bringup_launch_for_slam.py']),
+                [nav2_launch_dir, '/bringup_launch.py']),
             launch_arguments={
                 'map': '',
                 'slam': 'True',
