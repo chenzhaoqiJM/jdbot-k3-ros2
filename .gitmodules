@@ -1,0 +1,6 @@
+[submodule "core_pkgs/rf2o_laser_odometry"]
+	path = core_pkgs/rf2o_laser_odometry
+	url = https://github.com/chenzhaoqiJM/rf2o_laser_odometry.git
+[submodule "core_pkgs/tf_transformations"]
+	path = core_pkgs/tf_transformations
+	url = https://github.com/DLu/tf_transformations.git
