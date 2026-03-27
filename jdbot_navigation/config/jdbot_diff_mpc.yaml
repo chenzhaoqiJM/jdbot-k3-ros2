@@ -49,15 +49,15 @@ amcl:
     beam_skip_distance: 0.5
     beam_skip_error_threshold: 0.9
     beam_skip_threshold: 0.3
-    
+
     # 恢复（当定位失败时适度扩散粒子）
     recovery_alpha_fast: 0.1
     recovery_alpha_slow: 0.01
-    
+
     # 其他
     robot_model_type: "nav2_amcl::DifferentialMotionModel"
     save_pose_rate: 0.5
-    
+
     set_initial_pose: true
     always_reset_initial_pose: false
     first_map_only: false
@@ -257,7 +257,7 @@ local_costmap:
       # width: 3
       # height: 3
       resolution: 0.05
-      robot_radius: 0.21
+      footprint: "[ [-0.16, -0.12], [-0.16, 0.12], [0.16, 0.12], [0.16, -0.12] ]"
       plugins: ["obstacle_layer", "inflation_layer"]
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
@@ -289,7 +289,7 @@ global_costmap:
       global_frame: map
       robot_base_frame: base_footprint
       transform_tolerance: 0.5
-      robot_radius: 0.21
+      footprint: "[ [-0.16, -0.12], [-0.16, 0.12], [0.16, 0.12], [0.16, -0.12] ]"
       resolution: 0.05
       track_unknown_space: true
       plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
