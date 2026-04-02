@@ -36,7 +36,7 @@ def generate_launch_description():
     # 参数配置文件在功能包中的文件夹路径
     configuration_directory = LaunchConfiguration('configuration_directory',default= os.path.join(pkg_share_dir, 'config') )
     # 参数配置文件的名称
-    configuration_basename = LaunchConfiguration('configuration_basename', default='no_odom.lua')
+    configuration_basename = LaunchConfiguration('configuration_basename', default='provider_odom.lua')
 
  ################ 启动节点：cartographer_node、cartographer_occupancy_grid_node、rviz2 ###################
     cartographer_node = Node(
@@ -46,7 +46,9 @@ def generate_launch_description():
         output='screen',
         parameters=[{'use_sim_time': use_sim_time}],
         arguments=['-configuration_directory', configuration_directory,
-                   '-configuration_basename', configuration_basename])
+                   '-configuration_basename', configuration_basename],
+        remappings=[('map', '/map_cartographer')]
+        )
 
     cartographer_occupancy_grid_node = Node(
         package='cartographer_ros',
@@ -54,7 +56,8 @@ def generate_launch_description():
         name='cartographer_occupancy_grid_node',
         output='screen',
         parameters=[{'use_sim_time': use_sim_time}],
-        arguments=['-resolution', resolution, '-publish_period_sec', publish_period_sec])
+        arguments=['-resolution', resolution, '-publish_period_sec', publish_period_sec],
+        remappings=[('map', '/map_cartographer')])
 
 
     ld = LaunchDescription()
