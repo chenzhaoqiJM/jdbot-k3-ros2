@@ -29,6 +29,7 @@ def generate_launch_description():
     pid_kp = LaunchConfiguration('pid_kp')
     pid_ki = LaunchConfiguration('pid_ki')
     pid_kd = LaunchConfiguration('pid_kd')
+    debug = LaunchConfiguration('debug')
 
     declare_serial_port = DeclareLaunchArgument(
         'serial_port',
@@ -145,6 +146,12 @@ def generate_launch_description():
         description='PID derivative gain'
     )
 
+    declare_debug = DeclareLaunchArgument(
+        'debug',
+        default_value='false',
+        description='Enable debug logs for serial RX/TX and feedback parsing'
+    )
+
     # ================== TF 静态变换 ==================
     tf2_node_base = Node(
         package='tf2_ros',
@@ -212,6 +219,7 @@ def generate_launch_description():
             'pid_kp': pid_kp,
             'pid_ki': pid_ki,
             'pid_kd': pid_kd,
+            'debug': debug,
         }]
     )
 
@@ -235,6 +243,7 @@ def generate_launch_description():
         declare_pid_kp,
         declare_pid_ki,
         declare_pid_kd,
+        declare_debug,
 
         tf2_node_base,
         tf2_node_3d_laser,

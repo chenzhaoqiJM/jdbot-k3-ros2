@@ -38,6 +38,7 @@ class CmdVelToSerial(Node):
         self.declare_parameter('pid_kp', 10.0)
         self.declare_parameter('pid_ki', 100.0)
         self.declare_parameter('pid_kd', 0.0)
+        self.declare_parameter('debug', False)
 
         # ===== odom 参数（新增）=====
         self.declare_parameter('publish_tf', True)
@@ -55,6 +56,7 @@ class CmdVelToSerial(Node):
         self.pid_kp = float(self.get_parameter('pid_kp').value)
         self.pid_ki = float(self.get_parameter('pid_ki').value)
         self.pid_kd = float(self.get_parameter('pid_kd').value)
+        self.debug = self.get_parameter('debug').value
 
         port = self.get_parameter('serial_port').value
         baud = self.get_parameter('baudrate').value
@@ -226,7 +228,18 @@ class CmdVelToSerial(Node):
             v_l = self.parse_motor(left)
             v_r = self.parse_motor(right)
 
-            # self.get_logger().info(f"left:{left}, right:{right}")
+            # left: "pluse_counts,spd(转/s),方向,pwm值"
+            if self.debug:
+                items = left.split(',')
+                pwm = float(items[-1])
+                speed = float(items[-3])           # 转/s
+                _dynamic_left_ff_factor = pwm / speed if abs(speed) > 1e-3 else 0.0
+
+                items_r = right.split(',')
+                pwm_r = float(items_r[-1])
+                speed_r = float(items_r[-3])           # 转/s
+                _dynamic_right_ff_factor = pwm_r / speed_r if abs(speed_r) > 1e-3 else 0.0
+                self.get_logger().info(f"left:{left}, right:{right}, 左轮ff_factor:{_dynamic_left_ff_factor:.2f}, 右轮ff_factor:{_dynamic_right_ff_factor:.2f}")
 
             with self.lock:
                 self.v_l = v_l
