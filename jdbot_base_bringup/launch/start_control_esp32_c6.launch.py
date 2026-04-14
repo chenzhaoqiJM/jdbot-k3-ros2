@@ -9,6 +9,10 @@ from launch_ros.actions import Node
 def generate_launch_description():
 
     # ================== 声明 Launch 参数 ==================
+    serial_port = LaunchConfiguration('serial_port')
+    baudrate = LaunchConfiguration('baudrate')
+    send_hz = LaunchConfiguration('send_hz')
+    cmd_vel_timeout = LaunchConfiguration('cmd_vel_timeout')
     publish_tf = LaunchConfiguration('publish_tf')
     odom_topic = LaunchConfiguration('odom_topic')
     odom_frame = LaunchConfiguration('odom_frame')
@@ -18,6 +22,38 @@ def generate_launch_description():
     motor2_factor = LaunchConfiguration('motor2_factor')
     wheel_diameter = LaunchConfiguration('wheel_diameter')
     wheel_base = LaunchConfiguration('wheel_base')
+    feedback_pwm_deadzone = LaunchConfiguration('feedback_pwm_deadzone')
+    encoder_ppr = LaunchConfiguration('encoder_ppr')
+    reduction_ratio = LaunchConfiguration('reduction_ratio')
+    ff_factor = LaunchConfiguration('ff_factor')
+    pid_kp = LaunchConfiguration('pid_kp')
+    pid_ki = LaunchConfiguration('pid_ki')
+    pid_kd = LaunchConfiguration('pid_kd')
+
+    declare_serial_port = DeclareLaunchArgument(
+        'serial_port',
+        default_value='/dev/ttyACM0',
+        description='Serial port for ESP32 C6'
+    )
+
+    declare_baudrate = DeclareLaunchArgument(
+        'baudrate',
+        default_value='115200',
+        description='Serial baudrate for ESP32 C6'
+    )
+
+    declare_send_hz = DeclareLaunchArgument(
+        'send_hz',
+        default_value='20.0',
+        description='Command send frequency in Hz'
+    )
+
+    declare_cmd_vel_timeout = DeclareLaunchArgument(
+        'cmd_vel_timeout',
+        default_value='0.4',
+        description='Timeout in seconds before stopping when cmd_vel is lost'
+    )
+
 
     declare_publish_tf = DeclareLaunchArgument(
         'publish_tf',
@@ -65,6 +101,48 @@ def generate_launch_description():
         'wheel_base',
         default_value='0.183',
         description='Wheel base (distance between wheels) in meters'
+    )
+
+    declare_feedback_pwm_deadzone = DeclareLaunchArgument(
+        'feedback_pwm_deadzone',
+        default_value='90',
+        description='PWM deadzone threshold for wheel speed feedback'
+    )
+
+    declare_encoder_ppr = DeclareLaunchArgument(
+        'encoder_ppr',
+        default_value='13.0',
+        description='Encoder pulses per revolution'
+    )
+
+    declare_reduction_ratio = DeclareLaunchArgument(
+        'reduction_ratio',
+        default_value='30.0',
+        description='Motor gearbox reduction ratio'
+    )
+
+    declare_ff_factor = DeclareLaunchArgument(
+        'ff_factor',
+        default_value='181.0',
+        description='Feed-forward control factor'
+    )
+
+    declare_pid_kp = DeclareLaunchArgument(
+        'pid_kp',
+        default_value='10.0',
+        description='PID proportional gain'
+    )
+
+    declare_pid_ki = DeclareLaunchArgument(
+        'pid_ki',
+        default_value='100.0',
+        description='PID integral gain'
+    )
+
+    declare_pid_kd = DeclareLaunchArgument(
+        'pid_kd',
+        default_value='0.0',
+        description='PID derivative gain'
     )
 
     # ================== TF 静态变换 ==================
@@ -115,6 +193,10 @@ def generate_launch_description():
         executable='ros2_ctrl_odom_node',
         name='ros2_ctrl_odom_node',
         parameters=[{
+            'serial_port': serial_port,
+            'baudrate': baudrate,
+            'send_hz': send_hz,
+            'cmd_vel_timeout': cmd_vel_timeout,
             'publish_tf': publish_tf,
             'odom_topic': odom_topic,
             'odom_frame': odom_frame,
@@ -123,10 +205,21 @@ def generate_launch_description():
             'motor2_factor':motor2_factor,
             'wheel_diameter': wheel_diameter,
             'wheel_base': wheel_base,
+            'feedback_pwm_deadzone': feedback_pwm_deadzone,
+            'encoder_ppr': encoder_ppr,
+            'reduction_ratio': reduction_ratio,
+            'ff_factor': ff_factor,
+            'pid_kp': pid_kp,
+            'pid_ki': pid_ki,
+            'pid_kd': pid_kd,
         }]
     )
 
     return LaunchDescription([
+        declare_serial_port,
+        declare_baudrate,
+        declare_send_hz,
+        declare_cmd_vel_timeout,
         declare_publish_tf,
         declare_odom_topic,
         declare_odom_frame,
@@ -135,6 +228,13 @@ def generate_launch_description():
         declare_motor2_factor,
         declare_wheel_diameter,
         declare_wheel_base,
+        declare_feedback_pwm_deadzone,
+        declare_encoder_ppr,
+        declare_reduction_ratio,
+        declare_ff_factor,
+        declare_pid_kp,
+        declare_pid_ki,
+        declare_pid_kd,
 
         tf2_node_base,
         tf2_node_3d_laser,

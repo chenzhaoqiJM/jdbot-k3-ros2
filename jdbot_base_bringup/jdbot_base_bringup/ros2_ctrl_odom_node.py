@@ -32,6 +32,12 @@ class CmdVelToSerial(Node):
         self.declare_parameter('motor1_factor', 1.0)
         self.declare_parameter('motor2_factor', 1.0)
         self.declare_parameter('feedback_pwm_deadzone', 90)
+        self.declare_parameter('encoder_ppr', 13.0)
+        self.declare_parameter('reduction_ratio', 30.0)
+        self.declare_parameter('ff_factor', 181.0)
+        self.declare_parameter('pid_kp', 10.0)
+        self.declare_parameter('pid_ki', 100.0)
+        self.declare_parameter('pid_kd', 0.0)
 
         # ===== odom 参数（新增）=====
         self.declare_parameter('publish_tf', True)
@@ -43,6 +49,12 @@ class CmdVelToSerial(Node):
         self.motor1_factor = self.get_parameter('motor1_factor').value
         self.motor2_factor = self.get_parameter('motor2_factor').value
         self.feedback_pwm_deadzone = self.get_parameter('feedback_pwm_deadzone').value
+        self.encoder_ppr = float(self.get_parameter('encoder_ppr').value)
+        self.reduction_ratio = float(self.get_parameter('reduction_ratio').value)
+        self.ff_factor = float(self.get_parameter('ff_factor').value)
+        self.pid_kp = float(self.get_parameter('pid_kp').value)
+        self.pid_ki = float(self.get_parameter('pid_ki').value)
+        self.pid_kd = float(self.get_parameter('pid_kd').value)
 
         port = self.get_parameter('serial_port').value
         baud = self.get_parameter('baudrate').value
@@ -59,6 +71,7 @@ class CmdVelToSerial(Node):
         # ---------------- 串口 ----------------
         self.ser = serial.Serial(port, baud, timeout=0.05)
         self.get_logger().info(f"Serial opened: {port} @ {baud}")
+        self.send_cfg()
 
         # ---------------- 状态 ----------------
         self.last_cmd_time = time.time()
@@ -106,6 +119,17 @@ class CmdVelToSerial(Node):
         self.read_thread.start()
 
         self.get_logger().info("cmd_vel → serial + odom node started")
+
+    # =====================================================
+    # 下发参数配置
+    # =====================================================
+    def send_cfg(self):
+        cfg = (
+            f"CFG,{self.encoder_ppr:.3f},{self.reduction_ratio:.3f},"
+            f"{self.ff_factor:.3f},{self.pid_kp:.3f},{self.pid_ki:.3f},{self.pid_kd:.3f}\n"
+        )
+        self.ser.write(cfg.encode())
+        self.get_logger().info(f"Sent CFG: {cfg.strip()}")
 
     # =====================================================
     # cmd_vel 回调
@@ -174,8 +198,18 @@ class CmdVelToSerial(Node):
                 while b'\n' in buf:
                     line, buf = buf.split(b'\n', 1)
                     text = line.decode('utf-8', errors='ignore').strip()
-                    if text:
-                        self.parse_feedback(text)
+                    if not text:
+                        continue
+
+                    if text.startswith('CFG_OK'):
+                        self.get_logger().info(f"CFG ACK: {text}")
+                        continue
+
+                    if text.startswith('CFG_ERR'):
+                        self.get_logger().error(f"CFG error: {text}")
+                        continue
+
+                    self.parse_feedback(text)
 
             except Exception as e:
                 self.get_logger().error(f"Serial read error: {e}")
@@ -192,7 +226,7 @@ class CmdVelToSerial(Node):
             v_l = self.parse_motor(left)
             v_r = self.parse_motor(right)
 
-            self.get_logger().info(f"left:{left}, right:{right}")
+            # self.get_logger().info(f"left:{left}, right:{right}")
 
             with self.lock:
                 self.v_l = v_l
