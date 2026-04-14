@@ -38,6 +38,9 @@ class CmdVelToSerial(Node):
         self.declare_parameter('pid_kp', 10.0)
         self.declare_parameter('pid_ki', 100.0)
         self.declare_parameter('pid_kd', 0.0)
+        self.declare_parameter('straight_balance_kp', 25.0)
+        self.declare_parameter('straight_balance_ki', 8.0)
+        self.declare_parameter('straight_balance_kd', 0.0)
         self.declare_parameter('debug', False)
 
         # ===== odom 参数（新增）=====
@@ -56,6 +59,9 @@ class CmdVelToSerial(Node):
         self.pid_kp = float(self.get_parameter('pid_kp').value)
         self.pid_ki = float(self.get_parameter('pid_ki').value)
         self.pid_kd = float(self.get_parameter('pid_kd').value)
+        self.straight_balance_kp = float(self.get_parameter('straight_balance_kp').value)
+        self.straight_balance_ki = float(self.get_parameter('straight_balance_ki').value)
+        self.straight_balance_kd = float(self.get_parameter('straight_balance_kd').value)
         self.debug = self.get_parameter('debug').value
 
         port = self.get_parameter('serial_port').value
@@ -128,7 +134,8 @@ class CmdVelToSerial(Node):
     def send_cfg(self):
         cfg = (
             f"CFG,{self.encoder_ppr:.3f},{self.reduction_ratio:.3f},"
-            f"{self.ff_factor:.3f},{self.pid_kp:.3f},{self.pid_ki:.3f},{self.pid_kd:.3f}\n"
+            f"{self.ff_factor:.3f},{self.pid_kp:.3f},{self.pid_ki:.3f},{self.pid_kd:.3f},"
+            f"{self.straight_balance_kp:.3f},{self.straight_balance_ki:.3f},{self.straight_balance_kd:.3f}\n"
         )
         self.ser.write(cfg.encode())
         self.get_logger().info(f"Sent CFG: {cfg.strip()}")
@@ -239,7 +246,7 @@ class CmdVelToSerial(Node):
                 pwm_r = float(items_r[-1])
                 speed_r = float(items_r[-3])           # 转/s
                 _dynamic_right_ff_factor = pwm_r / speed_r if abs(speed_r) > 1e-3 else 0.0
-                self.get_logger().info(f"left:{left}, right:{right}, 左轮ff_factor:{_dynamic_left_ff_factor:.2f}, 右轮ff_factor:{_dynamic_right_ff_factor:.2f}")
+                self.get_logger().info(f"left:{left}, right:{right},速度差:{(speed_r-speed):.2f}, 左轮ff_factor:{_dynamic_left_ff_factor:.2f}, 右轮ff_factor:{_dynamic_right_ff_factor:.2f}")
 
             with self.lock:
                 self.v_l = v_l

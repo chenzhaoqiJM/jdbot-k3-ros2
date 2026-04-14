@@ -29,6 +29,9 @@ def generate_launch_description():
     pid_kp = LaunchConfiguration('pid_kp')
     pid_ki = LaunchConfiguration('pid_ki')
     pid_kd = LaunchConfiguration('pid_kd')
+    straight_balance_kp = LaunchConfiguration('straight_balance_kp')
+    straight_balance_ki = LaunchConfiguration('straight_balance_ki')
+    straight_balance_kd = LaunchConfiguration('straight_balance_kd')
     debug = LaunchConfiguration('debug')
 
     declare_serial_port = DeclareLaunchArgument(
@@ -146,6 +149,24 @@ def generate_launch_description():
         description='PID derivative gain'
     )
 
+    declare_straight_balance_kp = DeclareLaunchArgument(
+        'straight_balance_kp',
+        default_value='25.0',
+        description='Straight driving balance PID proportional gain'
+    )
+
+    declare_straight_balance_ki = DeclareLaunchArgument(
+        'straight_balance_ki',
+        default_value='8.0',
+        description='Straight driving balance PID integral gain'
+    )
+
+    declare_straight_balance_kd = DeclareLaunchArgument(
+        'straight_balance_kd',
+        default_value='0.0',
+        description='Straight driving balance PID derivative gain'
+    )
+
     declare_debug = DeclareLaunchArgument(
         'debug',
         default_value='false',
@@ -219,6 +240,9 @@ def generate_launch_description():
             'pid_kp': pid_kp,
             'pid_ki': pid_ki,
             'pid_kd': pid_kd,
+            'straight_balance_kp': straight_balance_kp,
+            'straight_balance_ki': straight_balance_ki,
+            'straight_balance_kd': straight_balance_kd,
             'debug': debug,
         }]
     )
@@ -243,6 +267,9 @@ def generate_launch_description():
         declare_pid_kp,
         declare_pid_ki,
         declare_pid_kd,
+        declare_straight_balance_kp,
+        declare_straight_balance_ki,
+        declare_straight_balance_kd,
         declare_debug,
 
         tf2_node_base,
