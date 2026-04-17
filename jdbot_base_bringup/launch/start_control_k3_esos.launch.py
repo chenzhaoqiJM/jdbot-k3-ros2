@@ -24,6 +24,12 @@ def generate_launch_description():
     wheel_base = LaunchConfiguration('wheel_base')
     motor1_factor = LaunchConfiguration('motor1_factor')
     motor2_factor = LaunchConfiguration('motor2_factor')
+    reduction_ratio = LaunchConfiguration('reduction_ratio')
+    ff_factor = LaunchConfiguration('ff_factor')
+    pid_kp = LaunchConfiguration('pid_kp')
+    pid_ki = LaunchConfiguration('pid_ki')
+    pid_kd = LaunchConfiguration('pid_kd')
+    cfg_send_on_startup = LaunchConfiguration('cfg_send_on_startup')
 
     # ================== 参数声明 ==================
     declare_publish_tf = DeclareLaunchArgument(
@@ -72,6 +78,42 @@ def generate_launch_description():
         'motor2_factor',
         default_value='1.0',
         description='Speed factor for motor 2'
+    )
+
+    declare_reduction_ratio = DeclareLaunchArgument(
+        'reduction_ratio',
+        default_value='56.0',
+        description='Motor reduction ratio for CFG command'
+    )
+
+    declare_ff_factor = DeclareLaunchArgument(
+        'ff_factor',
+        default_value='0.3',
+        description='Feed-forward factor for CFG command'
+    )
+
+    declare_pid_kp = DeclareLaunchArgument(
+        'pid_kp',
+        default_value='0.05',
+        description='PID Kp for CFG command'
+    )
+
+    declare_pid_ki = DeclareLaunchArgument(
+        'pid_ki',
+        default_value='0.2',
+        description='PID Ki for CFG command'
+    )
+
+    declare_pid_kd = DeclareLaunchArgument(
+        'pid_kd',
+        default_value='0.01',
+        description='PID Kd for CFG command'
+    )
+
+    declare_cfg_send_on_startup = DeclareLaunchArgument(
+        'cfg_send_on_startup',
+        default_value='true',
+        description='Whether to send CFG command on startup'
     )
 
     # ================== TF 静态变换 ==================
@@ -131,6 +173,12 @@ def generate_launch_description():
             'wheel_base': wheel_base,
             'motor1_factor': motor1_factor,
             'motor2_factor': motor2_factor,
+            'reduction_ratio': reduction_ratio,
+            'ff_factor': ff_factor,
+            'pid_kp': pid_kp,
+            'pid_ki': pid_ki,
+            'pid_kd': pid_kd,
+            'cfg_send_on_startup': cfg_send_on_startup,
         }]
     )
 
@@ -144,6 +192,12 @@ def generate_launch_description():
         declare_wheel_base,
         declare_motor1_factor,
         declare_motor2_factor,
+        declare_reduction_ratio,
+        declare_ff_factor,
+        declare_pid_kp,
+        declare_pid_ki,
+        declare_pid_kd,
+        declare_cfg_send_on_startup,
 
         # 静态 TF
         tf2_node_base,

@@ -38,6 +38,8 @@ private:
 
   /* ---------- 命令发送 ---------- */
   bool send_motor_command(int dir1, double speed1, int dir2, double speed2);
+  bool send_cfg_command(double ratio, double ff, double kp, double ki,
+                        double kd);
 
   /* ---------- ROS 回调 ---------- */
   void cmdvel_callback(const geometry_msgs::msg::Twist::SharedPtr msg);
@@ -62,6 +64,13 @@ private:
   double wheel_base_;
   double motor1_factor_{1.0};
   double motor2_factor_{1.0};
+  double reduction_ratio_{0.0};
+  double ff_factor_{0.0};
+  double pid_kp_{0.0};
+  double pid_ki_{0.0};
+  double pid_kd_{0.0};
+  bool cfg_send_on_startup_{true};
+  bool cfg_sent_{false};
 
   /* ---------- ROS 接口 ---------- */
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_sub_;
