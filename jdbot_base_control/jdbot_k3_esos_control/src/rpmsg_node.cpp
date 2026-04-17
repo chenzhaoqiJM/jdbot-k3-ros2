@@ -41,14 +41,14 @@ RpmsgLegacyNode::RpmsgLegacyNode() : Node("rpmsg_legacy_node") {
   declare_parameter("send_hz", 20.0);
   declare_parameter("odom_hz", 50.0);
   declare_parameter("cmd_vel_timeout", 0.2);
-  declare_parameter("publish_tf", true);
-  declare_parameter("odom_topic", "odom");
+  declare_parameter("publish_tf", false);
+  declare_parameter("odom_topic", "odom_base");
   declare_parameter("odom_frame", "odom");
   declare_parameter("base_frame", "base_footprint");
 
   // 机器人参数
-  declare_parameter("wheel_radius", WHEEL_RADIUS);
-  declare_parameter("wheel_base", WHEEL_BASE);
+  declare_parameter("wheel_radius", 0.0335);
+  declare_parameter("wheel_base", 0.183);
   declare_parameter("motor1_factor", 1.0);
   declare_parameter("motor2_factor", 1.0);
   declare_parameter("reduction_ratio", 56.0);
@@ -57,6 +57,7 @@ RpmsgLegacyNode::RpmsgLegacyNode() : Node("rpmsg_legacy_node") {
   declare_parameter("pid_ki", 0.2);
   declare_parameter("pid_kd", 0.01);
   declare_parameter("cfg_send_on_startup", true);
+  declare_parameter("feedback_enable", false);
 
   // 获取参数
   send_hz_ = get_parameter("send_hz").as_double();
@@ -77,6 +78,7 @@ RpmsgLegacyNode::RpmsgLegacyNode() : Node("rpmsg_legacy_node") {
   pid_ki_ = get_parameter("pid_ki").as_double();
   pid_kd_ = get_parameter("pid_kd").as_double();
   cfg_send_on_startup_ = get_parameter("cfg_send_on_startup").as_bool();
+  feedback_enable_ = get_parameter("feedback_enable").as_bool();
 
   RCLCPP_INFO(get_logger(), "RPMsg Legacy Node starting...");
   RCLCPP_INFO(get_logger(),
@@ -84,10 +86,12 @@ RpmsgLegacyNode::RpmsgLegacyNode() : Node("rpmsg_legacy_node") {
               "motor1_factor=%.2f, motor2_factor=%.2f",
               wheel_radius_, wheel_base_, motor1_factor_, motor2_factor_);
   RCLCPP_INFO(get_logger(),
-              "CFG: send_on_startup=%s ratio=%.3f ff=%.3f kp=%.3f ki=%.3f "
-              "kd=%.3f",
-              cfg_send_on_startup_ ? "true" : "false", reduction_ratio_,
-              ff_factor_, pid_kp_, pid_ki_, pid_kd_);
+              "CFG: send_on_startup=%s feedback_enable=%s ratio=%.3f ff=%.3f "
+              "kp=%.3f ki=%.3f kd=%.3f",
+              cfg_send_on_startup_ ? "true" : "false",
+              feedback_enable_ ? "true" : "false", reduction_ratio_,
+              ff_factor_, pid_kp_,
+              pid_ki_, pid_kd_);
 
   // 初始化 RPMsg
   if (!rpmsg_init()) {
@@ -279,13 +283,14 @@ bool RpmsgLegacyNode::send_motor_command(int dir1, double speed1, int dir2,
 }
 
 bool RpmsgLegacyNode::send_cfg_command(double ratio, double ff, double kp,
-                                       double ki, double kd) {
+                                       double ki, double kd,
+                                       bool feedback_enable) {
   if (rpmsg_fd_ < 0)
     return false;
 
   char cmd[96];
-  snprintf(cmd, sizeof(cmd), "CFG,%.3f,%.3f,%.3f,%.3f,%.3f", ratio, ff, kp,
-           ki, kd);
+  snprintf(cmd, sizeof(cmd), "CFG,%.3f,%.3f,%.3f,%.3f,%.3f,%d", ratio, ff,
+           kp, ki, kd, feedback_enable ? 1 : 0);
 
   ssize_t ret = write(rpmsg_fd_, cmd, strlen(cmd) + 1);
   if (ret < 0) {
@@ -323,7 +328,7 @@ void RpmsgLegacyNode::cmdvel_callback(
 void RpmsgLegacyNode::send_timer_callback() {
   if (cfg_send_on_startup_ && !cfg_sent_) {
     if (send_cfg_command(reduction_ratio_, ff_factor_, pid_kp_, pid_ki_,
-                         pid_kd_)) {
+                         pid_kd_, feedback_enable_)) {
       cfg_sent_ = true;
     }
   }

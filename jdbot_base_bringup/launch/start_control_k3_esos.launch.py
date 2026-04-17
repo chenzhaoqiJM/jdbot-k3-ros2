@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-K3 ESOS 旧协议电机控制启动文件
+K3 ESOS 协议电机控制启动文件
 
 使用 rpmsg_legacy_node，在 Linux 端计算里程计
 """
@@ -30,17 +30,18 @@ def generate_launch_description():
     pid_ki = LaunchConfiguration('pid_ki')
     pid_kd = LaunchConfiguration('pid_kd')
     cfg_send_on_startup = LaunchConfiguration('cfg_send_on_startup')
+    feedback_enable = LaunchConfiguration('feedback_enable')
 
     # ================== 参数声明 ==================
     declare_publish_tf = DeclareLaunchArgument(
         'publish_tf',
-        default_value='true',
+        default_value='fasle',
         description='Whether to publish odom -> base TF'
     )
 
     declare_odom_topic = DeclareLaunchArgument(
         'odom_topic',
-        default_value='odom',
+        default_value='odom_base',
         description='Odometry topic name'
     )
 
@@ -64,7 +65,7 @@ def generate_launch_description():
 
     declare_wheel_base = DeclareLaunchArgument(
         'wheel_base',
-        default_value='0.28',
+        default_value='0.183',
         description='Wheel base (distance between wheels) in meters'
     )
 
@@ -114,6 +115,12 @@ def generate_launch_description():
         'cfg_send_on_startup',
         default_value='true',
         description='Whether to send CFG command on startup'
+    )
+
+    declare_feedback_enable = DeclareLaunchArgument(
+        'feedback_enable',
+        default_value='false',
+        description='Whether to enable motor feedback from RCPU'
     )
 
     # ================== TF 静态变换 ==================
@@ -179,6 +186,7 @@ def generate_launch_description():
             'pid_ki': pid_ki,
             'pid_kd': pid_kd,
             'cfg_send_on_startup': cfg_send_on_startup,
+            'feedback_enable': feedback_enable,
         }]
     )
 
@@ -198,6 +206,7 @@ def generate_launch_description():
         declare_pid_ki,
         declare_pid_kd,
         declare_cfg_send_on_startup,
+        declare_feedback_enable,
 
         # 静态 TF
         tf2_node_base,
