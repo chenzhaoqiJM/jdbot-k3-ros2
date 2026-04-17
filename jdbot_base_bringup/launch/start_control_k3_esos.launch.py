@@ -35,7 +35,7 @@ def generate_launch_description():
     # ================== 参数声明 ==================
     declare_publish_tf = DeclareLaunchArgument(
         'publish_tf',
-        default_value='fasle',
+        default_value='false',
         description='Whether to publish odom -> base TF'
     )
 
