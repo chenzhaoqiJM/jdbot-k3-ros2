@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
 """
-K3 ESOS RPMsg 电机控制启动文件
+K3 ESOS 旧协议电机控制启动文件
 
-启动 rpmsg_motor_node 节点，通过 RPMsg 与 RCPU 通信
+使用 rpmsg_legacy_node，在 Linux 端计算里程计
 """
 
 from launch import LaunchDescription
@@ -22,8 +22,8 @@ def generate_launch_description():
 
     wheel_radius = LaunchConfiguration('wheel_radius')
     wheel_base = LaunchConfiguration('wheel_base')
-    gear_ratio = LaunchConfiguration('gear_ratio')
-    encoder_ppr = LaunchConfiguration('encoder_ppr')
+    motor1_factor = LaunchConfiguration('motor1_factor')
+    motor2_factor = LaunchConfiguration('motor2_factor')
 
     # ================== 参数声明 ==================
     declare_publish_tf = DeclareLaunchArgument(
@@ -52,26 +52,26 @@ def generate_launch_description():
 
     declare_wheel_radius = DeclareLaunchArgument(
         'wheel_radius',
-        default_value='0.05',
+        default_value='0.0335',
         description='Wheel radius in meters'
     )
 
     declare_wheel_base = DeclareLaunchArgument(
         'wheel_base',
-        default_value='0.2',
+        default_value='0.28',
         description='Wheel base (distance between wheels) in meters'
     )
 
-    declare_gear_ratio = DeclareLaunchArgument(
-        'gear_ratio',
-        default_value='56.0',
-        description='Motor gear ratio'
+    declare_motor1_factor = DeclareLaunchArgument(
+        'motor1_factor',
+        default_value='1.0',
+        description='Speed factor for motor 1'
     )
 
-    declare_encoder_ppr = DeclareLaunchArgument(
-        'encoder_ppr',
-        default_value='11.0',
-        description='Encoder pulses per revolution'
+    declare_motor2_factor = DeclareLaunchArgument(
+        'motor2_factor',
+        default_value='1.0',
+        description='Speed factor for motor 2'
     )
 
     # ================== TF 静态变换 ==================
@@ -83,11 +83,20 @@ def generate_launch_description():
                    'base_footprint', 'base_link'],
     )
 
+    # ydlidar
+    # tf2_node_laser = Node(
+    #     package='tf2_ros',
+    #     executable='static_transform_publisher',
+    #     name='tf_pub_base_to_laser',
+    #     arguments=['0.03', '0.0', '0.20', '3.14159', '0.0', '0.0',
+    #                'base_link', 'laser_link'],
+    # )
+
     tf2_node_laser = Node(
         package='tf2_ros',
         executable='static_transform_publisher',
         name='tf_pub_base_to_laser',
-        arguments=['0.03', '0.0', '0.20', '3.14159', '0.0', '0.0',
+        arguments=['0.0', '0.0', '0.20', '0.0', '0.0', '0.0',
                    'base_link', 'laser_link'],
     )
 
@@ -107,11 +116,11 @@ def generate_launch_description():
                    'base_link', 'camera_link'],
     )
 
-    # ================== RPMsg 电机控制节点 ==================
-    rpmsg_motor_node = Node(
+    # ================== 旧协议电机控制节点 ==================
+    rpmsg_legacy_node = Node(
         package='jdbot_k3_esos_control',
-        executable='rpmsg_motor_node',
-        name='rpmsg_motor_node',
+        executable='rpmsg_node',
+        name='rpmsg_node',
         output='screen',
         parameters=[{
             'publish_tf': publish_tf,
@@ -120,8 +129,8 @@ def generate_launch_description():
             'base_frame': base_frame,
             'wheel_radius': wheel_radius,
             'wheel_base': wheel_base,
-            'gear_ratio': gear_ratio,
-            'encoder_ppr': encoder_ppr,
+            'motor1_factor': motor1_factor,
+            'motor2_factor': motor2_factor,
         }]
     )
 
@@ -133,8 +142,8 @@ def generate_launch_description():
         declare_base_frame,
         declare_wheel_radius,
         declare_wheel_base,
-        declare_gear_ratio,
-        declare_encoder_ppr,
+        declare_motor1_factor,
+        declare_motor2_factor,
 
         # 静态 TF
         tf2_node_base,
@@ -143,5 +152,5 @@ def generate_launch_description():
         tf2_node_rgbd,
 
         # 电机控制节点
-        rpmsg_motor_node,
+        rpmsg_legacy_node,
     ])

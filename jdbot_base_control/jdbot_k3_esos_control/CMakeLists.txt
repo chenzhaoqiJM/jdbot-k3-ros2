@@ -20,26 +20,14 @@ find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 
-# RPMsg 电机控制节点 (新协议)
-add_executable(rpmsg_motor_node
-  src/rpmsg_motor_node.cpp
-  src/rpmsg_motor_main.cpp
-)
-
-ament_target_dependencies(rpmsg_motor_node
-  rclcpp
-  geometry_msgs
-  nav_msgs
-  tf2_ros
-)
 
 # RPMsg 旧协议节点 (Linux 端计算里程计)
-add_executable(rpmsg_legacy_node
-  src/rpmsg_legacy_node.cpp
-  src/rpmsg_legacy_main.cpp
+add_executable(rpmsg_node
+  src/rpmsg_node.cpp
+  src/rpmsg_main.cpp
 )
 
-ament_target_dependencies(rpmsg_legacy_node
+ament_target_dependencies(rpmsg_node
   rclcpp
   geometry_msgs
   nav_msgs
@@ -47,7 +35,7 @@ ament_target_dependencies(rpmsg_legacy_node
 )
 
 # 安装可执行文件
-install(TARGETS rpmsg_motor_node rpmsg_legacy_node
+install(TARGETS rpmsg_node
   DESTINATION lib/${PROJECT_NAME}
 )
 

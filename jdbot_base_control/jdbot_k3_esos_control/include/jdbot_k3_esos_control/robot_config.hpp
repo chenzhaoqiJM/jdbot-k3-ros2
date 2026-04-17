@@ -27,6 +27,6 @@ constexpr double WHEEL_BASE = 0.28;
 constexpr double GEAR_RATIO = 56.0;
 
 // 编码器每转脉冲数
-constexpr double ENCODER_PPR = 11.0;
+constexpr double ENCODER_PPR = 13.0;
 
 }  // namespace robot_config

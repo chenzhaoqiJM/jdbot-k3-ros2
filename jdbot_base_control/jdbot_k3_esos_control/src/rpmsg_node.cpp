@@ -1,12 +1,14 @@
 /**
- * RPMsg 电机控制节点实现
+ * 旧协议电机控制节点实现
  *
- * 通过 RPMsg 与 RCPU 通信实现:
- * - 接收 /cmd_vel 并发送 VEL 命令
- * - 接收 ODM 里程计数据并发布
+ * 使用旧协议格式与 RCPU 通信:
+ * - 发送: "dir1,speed1;dir2,speed2"
+ * - 接收: "dir1,speed1_mrs;dir2,speed2_mrs"
+ *
+ * 在 Linux 端根据反馈计算里程计
  */
 
-#include "jdbot_k3_esos_control/rpmsg_motor_node.hpp"
+#include "jdbot_k3_esos_control/rpmsg_node.hpp"
 #include "jdbot_k3_esos_control/robot_config.hpp"
 
 #include <fcntl.h>
@@ -34,11 +36,11 @@ struct rpmsg_endpoint_info {
 
 /* ================= 构造/析构 ================= */
 
-RpmsgMotorNode::RpmsgMotorNode() : Node("rpmsg_motor_node") {
+RpmsgLegacyNode::RpmsgLegacyNode() : Node("rpmsg_legacy_node") {
   // 声明参数
-  declare_parameter("send_hz", 50.0);
+  declare_parameter("send_hz", 20.0);
   declare_parameter("odom_hz", 50.0);
-  declare_parameter("cmd_vel_timeout", 0.4);
+  declare_parameter("cmd_vel_timeout", 0.2);
   declare_parameter("publish_tf", true);
   declare_parameter("odom_topic", "odom");
   declare_parameter("odom_frame", "odom");
@@ -47,8 +49,8 @@ RpmsgMotorNode::RpmsgMotorNode() : Node("rpmsg_motor_node") {
   // 机器人参数
   declare_parameter("wheel_radius", WHEEL_RADIUS);
   declare_parameter("wheel_base", WHEEL_BASE);
-  declare_parameter("gear_ratio", GEAR_RATIO);
-  declare_parameter("encoder_ppr", ENCODER_PPR);
+  declare_parameter("motor1_factor", 1.0);
+  declare_parameter("motor2_factor", 1.0);
 
   // 获取参数
   send_hz_ = get_parameter("send_hz").as_double();
@@ -61,14 +63,14 @@ RpmsgMotorNode::RpmsgMotorNode() : Node("rpmsg_motor_node") {
 
   wheel_radius_ = get_parameter("wheel_radius").as_double();
   wheel_base_ = get_parameter("wheel_base").as_double();
-  gear_ratio_ = get_parameter("gear_ratio").as_double();
-  encoder_ppr_ = get_parameter("encoder_ppr").as_double();
+  motor1_factor_ = get_parameter("motor1_factor").as_double();
+  motor2_factor_ = get_parameter("motor2_factor").as_double();
 
-  RCLCPP_INFO(get_logger(), "RPMsg Motor Node starting...");
+  RCLCPP_INFO(get_logger(), "RPMsg Legacy Node starting...");
   RCLCPP_INFO(get_logger(),
               "Parameters: wheel_radius=%.4f, wheel_base=%.4f, "
-              "gear_ratio=%.1f, ppr=%.0f",
-              wheel_radius_, wheel_base_, gear_ratio_, encoder_ppr_);
+              "motor1_factor=%.2f, motor2_factor=%.2f",
+              wheel_radius_, wheel_base_, motor1_factor_, motor2_factor_);
 
   // 初始化 RPMsg
   if (!rpmsg_init()) {
@@ -76,13 +78,11 @@ RpmsgMotorNode::RpmsgMotorNode() : Node("rpmsg_motor_node") {
     throw std::runtime_error("RPMsg initialization failed");
   }
 
-  // 发送配置命令
-  send_cfg_command();
-
   // ROS 订阅和发布
   cmd_sub_ = create_subscription<geometry_msgs::msg::Twist>(
       "cmd_vel", 10,
-      std::bind(&RpmsgMotorNode::cmdvel_callback, this, std::placeholders::_1));
+      std::bind(&RpmsgLegacyNode::cmdvel_callback, this,
+                std::placeholders::_1));
 
   odom_pub_ = create_publisher<nav_msgs::msg::Odometry>(odom_topic_, 10);
   tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
@@ -90,29 +90,30 @@ RpmsgMotorNode::RpmsgMotorNode() : Node("rpmsg_motor_node") {
   // 定时器
   send_timer_ =
       create_wall_timer(std::chrono::duration<double>(1.0 / send_hz_),
-                        std::bind(&RpmsgMotorNode::send_timer_callback, this));
+                        std::bind(&RpmsgLegacyNode::send_timer_callback, this));
 
   odom_timer_ =
       create_wall_timer(std::chrono::duration<double>(1.0 / odom_hz_),
-                        std::bind(&RpmsgMotorNode::odom_timer_callback, this));
+                        std::bind(&RpmsgLegacyNode::odom_timer_callback, this));
 
   last_cmd_time_ = now();
+  last_odom_time_ = std::chrono::steady_clock::now();
 
-  RCLCPP_INFO(get_logger(), "RPMsg Motor Node started successfully");
+  RCLCPP_INFO(get_logger(), "RPMsg Legacy Node started successfully");
 }
 
-RpmsgMotorNode::~RpmsgMotorNode() {
+RpmsgLegacyNode::~RpmsgLegacyNode() {
   running_ = false;
   if (recv_thread_.joinable()) {
     recv_thread_.join();
   }
   rpmsg_cleanup();
-  RCLCPP_INFO(get_logger(), "RPMsg Motor Node stopped");
+  RCLCPP_INFO(get_logger(), "RPMsg Legacy Node stopped");
 }
 
 /* ================= RPMsg 初始化/清理 ================= */
 
-bool RpmsgMotorNode::rpmsg_init() {
+bool RpmsgLegacyNode::rpmsg_init() {
   RCLCPP_INFO(get_logger(), "Opening RPMsg control device: %s", RPMSG_CTRL_DEV);
 
   // 打开 RPMsg 控制设备
@@ -151,18 +152,15 @@ bool RpmsgMotorNode::rpmsg_init() {
     return false;
   }
 
-  // 注意: 不设置 O_NONBLOCK，使用 poll() 处理读取超时
-  // 阻塞写入可以避免 EAGAIN 错误
-
   // 启动接收线程
   running_ = true;
-  recv_thread_ = std::thread(&RpmsgMotorNode::recv_thread_func, this);
+  recv_thread_ = std::thread(&RpmsgLegacyNode::recv_thread_func, this);
 
   RCLCPP_INFO(get_logger(), "RPMsg initialized successfully");
   return true;
 }
 
-void RpmsgMotorNode::rpmsg_cleanup() {
+void RpmsgLegacyNode::rpmsg_cleanup() {
   if (rpmsg_fd_ >= 0) {
     close(rpmsg_fd_);
     rpmsg_fd_ = -1;
@@ -176,7 +174,7 @@ void RpmsgMotorNode::rpmsg_cleanup() {
 
 /* ================= 接收线程 ================= */
 
-void RpmsgMotorNode::recv_thread_func() {
+void RpmsgLegacyNode::recv_thread_func() {
   RCLCPP_INFO(get_logger(), "Receive thread started");
 
   char recv_buf[256];
@@ -207,14 +205,36 @@ void RpmsgMotorNode::recv_thread_func() {
       }
 
       if (n > 0) {
-        // 解析 ODM 数据
-        if (strncmp(recv_buf, "ODM:", 4) == 0) {
-          OdometryState odom;
-          if (sscanf(recv_buf + 4, "%lf,%lf,%lf,%lf,%lf,%u", &odom.x, &odom.y,
-                     &odom.theta, &odom.v, &odom.w, &odom.timestamp_ms) == 6) {
-            std::lock_guard<std::mutex> lock(odom_mutex_);
-            odom_state_ = odom;
-          }
+        // 解析旧协议反馈: "dir1,speed1_mrs;dir2,speed2_mrs"
+        int dir1 = 0, dir2 = 0;
+        int speed1_mrs = 0, speed2_mrs = 0;
+
+        if (sscanf(recv_buf, "%d,%d;%d,%d", &dir1, &speed1_mrs, &dir2,
+                   &speed2_mrs) == 4) {
+          // 转换 毫转/秒 -> m/s
+          // speed_mrs 是轮子的转速 (毫转/秒, milli-revolutions per second)
+          // 转/秒 = 毫转/秒 / 1000
+          // 线速度 = 转/秒 * 2 * pi * 轮半径
+          double rps1 = speed1_mrs / 1000.0; // 转/秒
+          double rps2 = speed2_mrs / 1000.0;
+
+          double v1 = rps1 * 2.0 * M_PI * wheel_radius_;
+          double v2 = rps2 * 2.0 * M_PI * wheel_radius_;
+
+          // 根据方向调整符号
+          if (dir1 == 2)
+            v1 = -v1;
+          else if (dir1 == 0)
+            v1 = 0.0;
+
+          if (dir2 == 2)
+            v2 = -v2;
+          else if (dir2 == 0)
+            v2 = 0.0;
+
+          std::lock_guard<std::mutex> lock(feedback_mutex_);
+          v_l_ = v1;
+          v_r_ = v2;
         }
       }
     }
@@ -225,58 +245,38 @@ void RpmsgMotorNode::recv_thread_func() {
 
 /* ================= 命令发送 ================= */
 
-bool RpmsgMotorNode::send_cfg_command() {
-  if (rpmsg_fd_ < 0)
-    return false;
-
-  char cmd[128];
-  snprintf(cmd, sizeof(cmd),
-           "CFG:wheel_radius=%.4f;wheel_base=%.4f;gear_ratio=%.1f;ppr=%.0f",
-           wheel_radius_, wheel_base_, gear_ratio_, encoder_ppr_);
-
-  RCLCPP_INFO(get_logger(), "Sending config: %s", cmd);
-
-  ssize_t ret = write(rpmsg_fd_, cmd, strlen(cmd) + 1);
-  if (ret < 0) {
-    RCLCPP_ERROR(get_logger(), "Write CFG failed: %s", strerror(errno));
-    return false;
-  }
-  return true;
-}
-
-bool RpmsgMotorNode::send_vel_command(double v, double w) {
+bool RpmsgLegacyNode::send_motor_command(int dir1, double speed1, int dir2,
+                                         double speed2) {
   if (rpmsg_fd_ < 0)
     return false;
 
   char cmd[64];
-  snprintf(cmd, sizeof(cmd), "VEL:%.3f,%.3f", v, w);
+  snprintf(cmd, sizeof(cmd), "%d,%.3f;%d,%.3f", dir1, speed1, dir2, speed2);
 
   ssize_t ret = write(rpmsg_fd_, cmd, strlen(cmd) + 1);
   if (ret < 0) {
-    RCLCPP_ERROR(get_logger(), "Write VEL failed: %s", strerror(errno));
+    RCLCPP_ERROR(get_logger(), "Write failed: %s", strerror(errno));
     return false;
   }
   return true;
 }
 
-bool RpmsgMotorNode::send_rst_command() {
-  if (rpmsg_fd_ < 0)
-    return false;
+/* ================= 辅助函数 ================= */
 
-  const char *cmd = "RST:";
-  RCLCPP_INFO(get_logger(), "Sending reset command");
-
-  ssize_t ret = write(rpmsg_fd_, cmd, strlen(cmd) + 1);
-  if (ret < 0) {
-    RCLCPP_ERROR(get_logger(), "Write RST failed: %s", strerror(errno));
-    return false;
+std::pair<int, double> RpmsgLegacyNode::velocity_to_motor(double v) {
+  if (std::abs(v) < 1e-3) {
+    return {0, 0.0};
   }
-  return true;
+
+  int dir = v > 0 ? 1 : 2;
+  // 线速度 -> 转/秒: speed = |v| / (2 * pi * wheel_radius)
+  double speed = std::abs(v) / (2.0 * M_PI * wheel_radius_);
+  return {dir, speed};
 }
 
 /* ================= ROS 回调 ================= */
 
-void RpmsgMotorNode::cmdvel_callback(
+void RpmsgLegacyNode::cmdvel_callback(
     const geometry_msgs::msg::Twist::SharedPtr msg) {
   std::lock_guard<std::mutex> lock(cmd_mutex_);
   cur_v_ = msg->linear.x;
@@ -284,7 +284,7 @@ void RpmsgMotorNode::cmdvel_callback(
   last_cmd_time_ = now();
 }
 
-void RpmsgMotorNode::send_timer_callback() {
+void RpmsgLegacyNode::send_timer_callback() {
   double v, w;
   {
     std::lock_guard<std::mutex> lock(cmd_mutex_);
@@ -296,45 +296,76 @@ void RpmsgMotorNode::send_timer_callback() {
       w = cur_w_;
     }
   }
-  send_vel_command(v, w);
+
+  // 差速运动学: v_l = v - w * L/2, v_r = v + w * L/2
+  double v_l = v - w * wheel_base_ / 2.0;
+  double v_r = v + w * wheel_base_ / 2.0;
+
+  auto [dir1, speed1] = velocity_to_motor(v_l);
+  auto [dir2, speed2] = velocity_to_motor(v_r);
+
+  // 应用电机因子
+  speed1 *= motor1_factor_;
+  speed2 *= motor2_factor_;
+
+  send_motor_command(dir1, speed1, dir2, speed2);
 }
 
-void RpmsgMotorNode::odom_timer_callback() { publish_odom(); }
+void RpmsgLegacyNode::odom_timer_callback() {
+  auto now_tp = std::chrono::steady_clock::now();
+  double dt = std::chrono::duration<double>(now_tp - last_odom_time_).count();
+  last_odom_time_ = now_tp;
+
+  if (dt <= 0.0)
+    return;
+
+  double v_l, v_r;
+  {
+    std::lock_guard<std::mutex> lock(feedback_mutex_);
+    v_l = v_l_;
+    v_r = v_r_;
+  }
+
+  // 差速运动学逆解
+  double v = (v_l + v_r) / 2.0;
+  double w = (v_r - v_l) / wheel_base_;
+
+  // 航迹推算
+  yaw_ += w * dt;
+  x_ += v * std::cos(yaw_) * dt;
+  y_ += v * std::sin(yaw_) * dt;
+
+  publish_odom(v, w);
+}
 
 /* ================= 里程计发布 ================= */
 
-void RpmsgMotorNode::publish_odom() {
-  OdometryState odom;
-  {
-    std::lock_guard<std::mutex> lock(odom_mutex_);
-    odom = odom_state_;
-  }
-
+void RpmsgLegacyNode::publish_odom(double v, double w) {
   auto stamp = now();
 
-  nav_msgs::msg::Odometry odom_msg;
-  odom_msg.header.stamp = stamp;
-  odom_msg.header.frame_id = odom_frame_;
-  odom_msg.child_frame_id = base_frame_;
+  nav_msgs::msg::Odometry odom;
+  odom.header.stamp = stamp;
+  odom.header.frame_id = odom_frame_;
+  odom.child_frame_id = base_frame_;
 
-  odom_msg.pose.pose.position.x = odom.x;
-  odom_msg.pose.pose.position.y = odom.y;
-  odom_msg.pose.pose.orientation.z = std::sin(odom.theta / 2.0);
-  odom_msg.pose.pose.orientation.w = std::cos(odom.theta / 2.0);
+  odom.pose.pose.position.x = x_;
+  odom.pose.pose.position.y = y_;
+  odom.pose.pose.orientation.z = std::sin(yaw_ / 2.0);
+  odom.pose.pose.orientation.w = std::cos(yaw_ / 2.0);
 
-  odom_msg.twist.twist.linear.x = odom.v;
-  odom_msg.twist.twist.angular.z = odom.w;
+  odom.twist.twist.linear.x = v;
+  odom.twist.twist.angular.z = w;
 
-  odom_pub_->publish(odom_msg);
+  odom_pub_->publish(odom);
 
   if (publish_tf_) {
     geometry_msgs::msg::TransformStamped tf;
     tf.header.stamp = stamp;
     tf.header.frame_id = odom_frame_;
     tf.child_frame_id = base_frame_;
-    tf.transform.translation.x = odom.x;
-    tf.transform.translation.y = odom.y;
-    tf.transform.rotation = odom_msg.pose.pose.orientation;
+    tf.transform.translation.x = x_;
+    tf.transform.translation.y = y_;
+    tf.transform.rotation = odom.pose.pose.orientation;
     tf_broadcaster_->sendTransform(tf);
   }
 }
