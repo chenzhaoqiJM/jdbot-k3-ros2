@@ -12,6 +12,7 @@ def generate_launch_description():
     serial_port = LaunchConfiguration('serial_port')
     baudrate = LaunchConfiguration('baudrate')
     send_hz = LaunchConfiguration('send_hz')
+    odom_hz = LaunchConfiguration('odom_hz')
     cmd_vel_timeout = LaunchConfiguration('cmd_vel_timeout')
     publish_tf = LaunchConfiguration('publish_tf')
     odom_topic = LaunchConfiguration('odom_topic')
@@ -32,6 +33,7 @@ def generate_launch_description():
     straight_balance_kp = LaunchConfiguration('straight_balance_kp')
     straight_balance_ki = LaunchConfiguration('straight_balance_ki')
     straight_balance_kd = LaunchConfiguration('straight_balance_kd')
+    cfg_send_on_startup = LaunchConfiguration('cfg_send_on_startup')
     debug = LaunchConfiguration('debug')
 
     declare_serial_port = DeclareLaunchArgument(
@@ -50,6 +52,12 @@ def generate_launch_description():
         'send_hz',
         default_value='20.0',
         description='Command send frequency in Hz'
+    )
+
+    declare_odom_hz = DeclareLaunchArgument(
+        'odom_hz',
+        default_value='50.0',
+        description='Odometry publish frequency in Hz'
     )
 
     declare_cmd_vel_timeout = DeclareLaunchArgument(
@@ -109,25 +117,25 @@ def generate_launch_description():
 
     declare_feedback_pwm_deadzone = DeclareLaunchArgument(
         'feedback_pwm_deadzone',
-        default_value='90',
-        description='PWM deadzone threshold for wheel speed feedback'
+        default_value='0',
+        description='PWM deadzone threshold for wheel speed feedback; 0 keeps encoder feedback unfiltered'
     )
 
     declare_encoder_ppr = DeclareLaunchArgument(
         'encoder_ppr',
-        default_value='13.0',
+        default_value='1000.0',
         description='Encoder pulses per revolution'
     )
 
     declare_reduction_ratio = DeclareLaunchArgument(
         'reduction_ratio',
-        default_value='30.0',
+        default_value='56.0',
         description='Motor gearbox reduction ratio'
     )
 
     declare_ff_factor = DeclareLaunchArgument(
         'ff_factor',
-        default_value='181.0',
+        default_value='310.0',
         description='Feed-forward control factor'
     )
 
@@ -139,7 +147,7 @@ def generate_launch_description():
 
     declare_pid_ki = DeclareLaunchArgument(
         'pid_ki',
-        default_value='100.0',
+        default_value='70.0',
         description='PID integral gain'
     )
 
@@ -164,7 +172,13 @@ def generate_launch_description():
     declare_straight_balance_kd = DeclareLaunchArgument(
         'straight_balance_kd',
         default_value='0.0',
-        description='Straight driving balance PID derivative gain'
+        description='Reserved CFG compatibility field; current ESP32-C6 firmware ignores it'
+    )
+
+    declare_cfg_send_on_startup = DeclareLaunchArgument(
+        'cfg_send_on_startup',
+        default_value='true',
+        description='Whether to send CFG command to ESP32-C6 on startup'
     )
 
     declare_debug = DeclareLaunchArgument(
@@ -224,6 +238,7 @@ def generate_launch_description():
             'serial_port': serial_port,
             'baudrate': baudrate,
             'send_hz': send_hz,
+            'odom_hz': odom_hz,
             'cmd_vel_timeout': cmd_vel_timeout,
             'publish_tf': publish_tf,
             'odom_topic': odom_topic,
@@ -243,6 +258,7 @@ def generate_launch_description():
             'straight_balance_kp': straight_balance_kp,
             'straight_balance_ki': straight_balance_ki,
             'straight_balance_kd': straight_balance_kd,
+            'cfg_send_on_startup': cfg_send_on_startup,
             'debug': debug,
         }]
     )
@@ -251,6 +267,7 @@ def generate_launch_description():
         declare_serial_port,
         declare_baudrate,
         declare_send_hz,
+        declare_odom_hz,
         declare_cmd_vel_timeout,
         declare_publish_tf,
         declare_odom_topic,
@@ -270,6 +287,7 @@ def generate_launch_description():
         declare_straight_balance_kp,
         declare_straight_balance_ki,
         declare_straight_balance_kd,
+        declare_cfg_send_on_startup,
         declare_debug,
 
         tf2_node_base,

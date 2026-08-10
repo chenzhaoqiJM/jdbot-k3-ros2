@@ -26,21 +26,23 @@ class CmdVelToSerial(Node):
         self.declare_parameter('serial_port', '/dev/jdbot')
         self.declare_parameter('baudrate', 115200)
         self.declare_parameter('send_hz', 20.0)
+        self.declare_parameter('odom_hz', 50.0)
         self.declare_parameter('cmd_vel_timeout', 0.4)
         self.declare_parameter('wheel_diameter', DEFAULT_WHEEL_DIAMETER)
         self.declare_parameter('wheel_base', DEFAULT_WHEEL_BASE)
         self.declare_parameter('motor1_factor', 1.0)
         self.declare_parameter('motor2_factor', 1.0)
-        self.declare_parameter('feedback_pwm_deadzone', 90)
-        self.declare_parameter('encoder_ppr', 13.0)
-        self.declare_parameter('reduction_ratio', 30.0)
-        self.declare_parameter('ff_factor', 181.0)
+        self.declare_parameter('feedback_pwm_deadzone', 0)
+        self.declare_parameter('encoder_ppr', 1000.0)
+        self.declare_parameter('reduction_ratio', 56.0)
+        self.declare_parameter('ff_factor', 310.0)
         self.declare_parameter('pid_kp', 10.0)
-        self.declare_parameter('pid_ki', 100.0)
+        self.declare_parameter('pid_ki', 70.0)
         self.declare_parameter('pid_kd', 0.0)
         self.declare_parameter('straight_balance_kp', 25.0)
         self.declare_parameter('straight_balance_ki', 8.0)
         self.declare_parameter('straight_balance_kd', 0.0)
+        self.declare_parameter('cfg_send_on_startup', True)
         self.declare_parameter('debug', False)
 
         # ===== odom 参数（新增）=====
@@ -67,9 +69,11 @@ class CmdVelToSerial(Node):
         port = self.get_parameter('serial_port').value
         baud = self.get_parameter('baudrate').value
         self.send_hz = self.get_parameter('send_hz').value
+        self.odom_hz = self.get_parameter('odom_hz').value
         self.timeout = self.get_parameter('cmd_vel_timeout').value
         self.wheel_diameter = self.get_parameter('wheel_diameter').value
         self.wheel_base = self.get_parameter('wheel_base').value
+        self.cfg_send_on_startup = self.get_parameter('cfg_send_on_startup').value
 
         self.publish_tf = self.get_parameter('publish_tf').value
         self.odom_topic = self.get_parameter('odom_topic').value
@@ -98,6 +102,7 @@ class CmdVelToSerial(Node):
         # 轮速缓存（来自串口）
         self.v_l = 0.0
         self.v_r = 0.0
+        self.power_voltage = 0.0
 
         # ---------------- ROS ----------------
         self.create_subscription(Twist, 'cmd_vel', self.cmdvel_cb, 10)
@@ -115,7 +120,7 @@ class CmdVelToSerial(Node):
 
         # ===== odom 定时器（新增）=====
         self.odom_timer = self.create_timer(
-            1.0 / 50.0,
+            1.0 / self.odom_hz,
             self.odom_timer_cb
         )
 
@@ -132,6 +137,9 @@ class CmdVelToSerial(Node):
     # 下发参数配置
     # =====================================================
     def send_cfg(self):
+        if not self.cfg_send_on_startup:
+            return
+
         cfg = (
             f"CFG,{self.encoder_ppr:.3f},{self.reduction_ratio:.3f},"
             f"{self.ff_factor:.3f},{self.pid_kp:.3f},{self.pid_ki:.3f},{self.pid_kd:.3f},"
@@ -229,11 +237,11 @@ class CmdVelToSerial(Node):
     # =====================================================
     def parse_feedback(self, text: str):
         try:
-            text_split_text = text.split(';')
-            left, right = text_split_text[-2], text_split_text[-1]
+            power, left, right = text.split(';')
 
             v_l = self.parse_motor(left)
             v_r = self.parse_motor(right)
+            power_voltage = float(power)
 
             # left: "pluse_counts,spd(转/s),方向,pwm值"
             if self.debug:
@@ -251,9 +259,10 @@ class CmdVelToSerial(Node):
             with self.lock:
                 self.v_l = v_l
                 self.v_r = v_r
+                self.power_voltage = power_voltage
 
         except Exception as e:
-            self.get_logger().warn(f"Parse error: {text}")
+            self.get_logger().warn(f"Parse error: {text}: {e}")
 
     def parse_motor(self, s: str) -> float:
         items = s.split(',')
@@ -266,8 +275,8 @@ class CmdVelToSerial(Node):
 
         if direction == 2:
             speed = -speed
-        # elif direction == 0:
-        #     speed = 0.0
+        elif direction == 0:
+            speed = 0.0
 
         # 转/s → m/s
         return speed * math.pi * self.wheel_diameter
