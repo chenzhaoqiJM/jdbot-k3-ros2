@@ -3,7 +3,7 @@
 ```
 sudo apt install python3-zmq python3-serial python3-transforms3d \
 libspdlog-dev libconsole-bridge-dev liborocos-kdl-dev nlohmann-json3-dev liblgpio-dev \
-liblttng-ust-dev libgpiod-dev
+liblttng-ust-dev libgpiod-dev ros-humble-camera-info-manager
 ```
 
 
