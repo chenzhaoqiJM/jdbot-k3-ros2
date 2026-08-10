@@ -3,7 +3,8 @@
 ```
 sudo apt install python3-zmq python3-serial python3-transforms3d \
 libspdlog-dev libconsole-bridge-dev liborocos-kdl-dev nlohmann-json3-dev liblgpio-dev \
-liblttng-ust-dev libgpiod-dev ros-humble-camera-info-manager
+liblttng-ust-dev libgpiod-dev ros-humble-camera-info-manager ros-humble-slam-toolbox \
+ros-humble-cartographer ros-humble-cartographer-ros ros-humble-nav2*
 ```
 
 
@@ -38,4 +39,50 @@ mkdir ~/hesai_jt128_ws && cd  ~/hesai_jt128_ws
 git clone https://github.com/chenzhaoqiJM/HesaiLidar_ROS_2.0.git
 cd HesaiLidar_ROS_2.0
 git submodule update --init --recursive
+```
+
+## 基本命令
+
+### 底盘
+
+```bash
+ros2 launch jdbot_base_bringup start_control_esp32_c6.launch.py wheel_base:=0.30 wheel_diameter:=0.065
+```
+
+### 键盘控制
+
+```bash
+ros2 run teleop_twist_keyboard teleop_twist_keyboard
+```
+
+### 启动激光雷达
+
+```bash
+ros2 launch jdbot_base_bringup start_ydlidar.launch.py
+```
+
+## 建图
+
+### slam_toolbox
+
+```bash
+ros2 launch jdbot_slam online_async_launch.py
+```
+
+### cartographer
+
+```bash
+ros2 launch jdbot_slam cartographer.launch.py
+```
+
+### 保存
+
+```bash
+ros2 run nav2_map_server map_saver_cli -f my_map
+```
+
+## 导航
+
+```bash
+ros2 launch jdbot_navigation lidar_nav2.launch.py
 ```

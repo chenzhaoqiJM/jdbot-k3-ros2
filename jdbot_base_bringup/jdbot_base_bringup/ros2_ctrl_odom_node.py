@@ -273,7 +273,7 @@ class CmdVelToSerial(Node):
         if abs(pwm) < self.feedback_pwm_deadzone:
             return 0.0
 
-        if direction == 2:
+        if direction == 1:
             speed = -speed
         elif direction == 0:
             speed = 0.0
