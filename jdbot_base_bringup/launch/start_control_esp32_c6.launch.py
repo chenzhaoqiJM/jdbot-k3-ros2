@@ -14,6 +14,9 @@ def generate_launch_description():
     send_hz = LaunchConfiguration('send_hz')
     odom_hz = LaunchConfiguration('odom_hz')
     cmd_vel_timeout = LaunchConfiguration('cmd_vel_timeout')
+    cmd_vel_deadzone_threshold = LaunchConfiguration('cmd_vel_deadzone_threshold')
+    min_linear_speed = LaunchConfiguration('min_linear_speed')
+    min_angular_speed = LaunchConfiguration('min_angular_speed')
     publish_tf = LaunchConfiguration('publish_tf')
     odom_topic = LaunchConfiguration('odom_topic')
     odom_frame = LaunchConfiguration('odom_frame')
@@ -64,6 +67,24 @@ def generate_launch_description():
         'cmd_vel_timeout',
         default_value='0.4',
         description='Timeout in seconds before stopping when cmd_vel is lost'
+    )
+
+    declare_cmd_vel_deadzone_threshold = DeclareLaunchArgument(
+        'cmd_vel_deadzone_threshold',
+        default_value='0.001',
+        description='Lower absolute cmd_vel threshold; commands above this and below the minimum speed are raised to the minimum'
+    )
+
+    declare_min_linear_speed = DeclareLaunchArgument(
+        'min_linear_speed',
+        default_value='0.05',
+        description='Minimum absolute linear speed sent to the chassis when cmd_vel linear.x is above the deadzone threshold'
+    )
+
+    declare_min_angular_speed = DeclareLaunchArgument(
+        'min_angular_speed',
+        default_value='0.26',
+        description='Minimum absolute angular speed sent to the chassis when cmd_vel angular.z is above the deadzone threshold'
     )
 
 
@@ -240,6 +261,9 @@ def generate_launch_description():
             'send_hz': send_hz,
             'odom_hz': odom_hz,
             'cmd_vel_timeout': cmd_vel_timeout,
+            'cmd_vel_deadzone_threshold': cmd_vel_deadzone_threshold,
+            'min_linear_speed': min_linear_speed,
+            'min_angular_speed': min_angular_speed,
             'publish_tf': publish_tf,
             'odom_topic': odom_topic,
             'odom_frame': odom_frame,
@@ -269,6 +293,9 @@ def generate_launch_description():
         declare_send_hz,
         declare_odom_hz,
         declare_cmd_vel_timeout,
+        declare_cmd_vel_deadzone_threshold,
+        declare_min_linear_speed,
+        declare_min_angular_speed,
         declare_publish_tf,
         declare_odom_topic,
         declare_odom_frame,

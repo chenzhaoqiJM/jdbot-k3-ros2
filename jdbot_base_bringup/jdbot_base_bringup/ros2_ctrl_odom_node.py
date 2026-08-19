@@ -28,6 +28,9 @@ class CmdVelToSerial(Node):
         self.declare_parameter('send_hz', 20.0)
         self.declare_parameter('odom_hz', 50.0)
         self.declare_parameter('cmd_vel_timeout', 0.4)
+        self.declare_parameter('cmd_vel_deadzone_threshold', 0.001)
+        self.declare_parameter('min_linear_speed', 0.05)
+        self.declare_parameter('min_angular_speed', 0.26)
         self.declare_parameter('wheel_diameter', DEFAULT_WHEEL_DIAMETER)
         self.declare_parameter('wheel_base', DEFAULT_WHEEL_BASE)
         self.declare_parameter('motor1_factor', 1.0)
@@ -71,6 +74,9 @@ class CmdVelToSerial(Node):
         self.send_hz = self.get_parameter('send_hz').value
         self.odom_hz = self.get_parameter('odom_hz').value
         self.timeout = self.get_parameter('cmd_vel_timeout').value
+        self.cmd_vel_deadzone_threshold = float(self.get_parameter('cmd_vel_deadzone_threshold').value)
+        self.min_linear_speed = float(self.get_parameter('min_linear_speed').value)
+        self.min_angular_speed = float(self.get_parameter('min_angular_speed').value)
         self.wheel_diameter = self.get_parameter('wheel_diameter').value
         self.wheel_base = self.get_parameter('wheel_base').value
         self.cfg_send_on_startup = self.get_parameter('cfg_send_on_startup').value
@@ -171,11 +177,20 @@ class CmdVelToSerial(Node):
                 v = self.cur_v
                 w = self.cur_w
 
+        v = self.apply_cmd_vel_deadzone(v, self.min_linear_speed)
+        w = self.apply_cmd_vel_deadzone(w, self.min_angular_speed)
+
         self.send_cmd(v, w)
 
     # =====================================================
     # 串口发送
     # =====================================================
+    def apply_cmd_vel_deadzone(self, value, min_abs_value):
+        abs_value = abs(value)
+        if self.cmd_vel_deadzone_threshold < abs_value < min_abs_value:
+            return math.copysign(min_abs_value, value)
+        return value
+
     def send_cmd(self, v, w):
         v_l = v - w * self.wheel_base / 2.0
         v_r = v + w * self.wheel_base / 2.0
