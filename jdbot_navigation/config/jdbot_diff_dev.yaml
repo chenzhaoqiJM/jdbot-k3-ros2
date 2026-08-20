@@ -120,12 +120,12 @@ docking_server:
 
 controller_server:
   ros__parameters:
-    use_sim_time: True
+    use_sim_time: False
     controller_frequency: 20.0
     # 底盘实测死区：低于该速度认为没有实际运动
     min_x_velocity_threshold: 0.05
     min_y_velocity_threshold: 0.0
-    min_theta_velocity_threshold: 0.26
+    min_theta_velocity_threshold: 0.01
     odom_topic: odom
     progress_checker_plugin: "progress_checker"
     goal_checker_plugins: ["goal_checker"]
@@ -142,12 +142,12 @@ controller_server:
       stateful: True
     FollowPath:
       plugin: "nav2_regulated_pure_pursuit_controller::RegulatedPurePursuitController"
-      desired_linear_vel: 0.22
-      lookahead_dist: 0.3
-      min_lookahead_dist: 0.2
-      max_lookahead_dist: 0.6
-      lookahead_time: 1.5
-      rotate_to_heading_angular_vel: 0.8
+      desired_linear_vel: 0.5
+      lookahead_dist: 0.4
+      min_lookahead_dist: 0.3
+      max_lookahead_dist: 0.8
+      lookahead_time: 1.8
+      rotate_to_heading_angular_vel: 0.5
       transform_tolerance: 0.2
       use_velocity_scaled_lookahead_dist: true
       min_approach_linear_velocity: 0.05
@@ -157,10 +157,10 @@ controller_server:
       use_regulated_linear_velocity_scaling: true
       use_cost_regulated_linear_velocity_scaling: true
       regulated_linear_scaling_min_radius: 0.2
-      regulated_linear_scaling_min_speed: 0.05
+      regulated_linear_scaling_min_speed: 0.1
       use_rotate_to_heading: true
-      rotate_to_heading_min_angle: 0.35
-      max_angular_accel: 1.0
+      rotate_to_heading_min_angle: 0.5
+      max_angular_accel: 0.6
       max_robot_pose_search_dist: 3.0
       use_interpolation: true
       cost_scaling_dist: 0.1
@@ -400,8 +400,8 @@ velocity_smoother:
     min_velocity: [-0.5, 0.0, -2.5]
     deadband_velocity: [0.0, 0.0, 0.0]
     velocity_timeout: 1.0
-    max_accel: [2.5, 0.0, 3.2]
-    max_decel: [-2.5, 0.0, -3.2]
+    max_accel: [2.5, 0.0, 0.8]
+    max_decel: [-2.5, 0.0, -0.8]
     odom_topic: "odom"
     odom_duration: 0.1
     use_realtime_priority: false
