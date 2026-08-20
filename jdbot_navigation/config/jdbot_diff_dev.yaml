@@ -41,7 +41,7 @@ amcl:
     resample_interval: 1
 
     # 更新频率相关（LIDAR 10 Hz）
-    update_min_d: 0.15      # 15 cm 平移才触发一次更新（较灵敏）
+    update_min_d: 0.05      # 15 cm 平移才触发一次更新（较灵敏）
     update_min_a: 0.05      # ≈5.7°（0.1 rad）旋转触发一次更新
 
     # Beam-skip（遇到玻璃或反射时有用）
