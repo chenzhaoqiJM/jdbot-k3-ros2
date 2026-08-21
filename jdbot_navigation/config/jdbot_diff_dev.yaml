@@ -73,8 +73,8 @@ bt_navigator:
     robot_base_frame: base_footprint
     transform_tolerance: 0.5
     filter_duration: 0.3
-    default_nav_to_pose_bt_xml: "$(find-pkg-share nav2_bt_navigator)/behavior_trees/navigate_to_pose_w_replanning_and_recovery.xml" # behavior trees location.
-    default_nav_through_poses_bt_xml: "$(find-pkg-share nav2_bt_navigator)/behavior_trees/navigate_to_pose_w_replanning_and_recovery.xml"
+    default_nav_to_pose_bt_xml: "$(find-pkg-share jdbot_navigation)/config/behavior_trees/navigate_to_pose_w_replanning_and_recovery.xml" # behavior trees location.
+    default_nav_through_poses_bt_xml: "$(find-pkg-share jdbot_navigation)/config/behavior_trees/navigate_through_poses_w_replanning_and_recovery.xml"
     always_reload_bt_xml: false
     goal_blackboard_id: goal
     goals_blackboard_id: goals
@@ -152,8 +152,8 @@ controller_server:
       use_velocity_scaled_lookahead_dist: true
       min_approach_linear_velocity: 0.05
       approach_velocity_scaling_dist: 0.8
-      use_collision_detection: false
-      max_allowed_time_to_collision_up_to_carrot: 1.0
+      use_collision_detection: true
+      max_allowed_time_to_collision_up_to_carrot: 1.5
       use_regulated_linear_velocity_scaling: true
       use_cost_regulated_linear_velocity_scaling: true
       regulated_linear_scaling_min_radius: 0.2
