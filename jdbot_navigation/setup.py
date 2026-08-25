@@ -13,7 +13,7 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
         (os.path.join('share', package_name, 'config'), [f for f in glob.glob('config/*') if os.path.isfile(f)]),
-        (os.path.join('share', package_name, 'config', 'behavior_tree'), [f for f in glob.glob('config/behavior_trees/*') if os.path.isfile(f)]),
+        (os.path.join('share', package_name, 'config', 'behavior_trees'), glob.glob('config/behavior_trees/*.xml')),
         (os.path.join('share', package_name, 'launch'), glob.glob('launch/*.py')),
         (os.path.join('share', package_name, 'map'), [f for f in glob.glob('map/*') if os.path.isfile(f)]),
     ],
