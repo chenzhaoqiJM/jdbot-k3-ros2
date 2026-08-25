@@ -49,6 +49,16 @@ git submodule update --init --recursive
 ros2 launch jdbot_base_bringup start_control_esp32_c6.launch.py wheel_base:=0.270 wheel_diameter:=0.065
 ```
 
+或
+
+```bash
+ros2 launch jdbot_base_bringup start_control_esp32_c6.launch.py publish_tf:=false odom_topic:=odom_base wheel_base:=0.270 wheel_diameter:=0.065
+```
+
+```bash
+ros2 launch jdbot_slam cartographer_odom.launch.py
+```
+
 ### 键盘控制
 
 ```bash
