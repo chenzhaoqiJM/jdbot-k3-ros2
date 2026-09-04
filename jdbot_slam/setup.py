@@ -24,7 +24,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'hello_node = jdbot_slam.hello_node:main'
+            'hello_node = jdbot_slam.hello_node:main',
+            'tf_to_odom_node = jdbot_slam.tf_to_odom_node:main',
         ],
     },
 )

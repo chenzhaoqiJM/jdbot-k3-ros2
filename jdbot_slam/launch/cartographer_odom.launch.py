@@ -20,25 +20,28 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
-from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description():
-#################################### 节点参数配置 ########################################################
+    # 节点参数配置
     # 导航功能包的路径
     pkg_share_dir = get_package_share_directory('jdbot_slam')
     # 是否使用仿真时间，这里使用Gazebo，所以配置为true
     use_sim_time = LaunchConfiguration('use_sim_time', default='false')
-    # 构建地图的分辨率
-    resolution = LaunchConfiguration('resolution', default='0.05')
-    # 发布地图数据的周期
-    publish_period_sec = LaunchConfiguration('publish_period_sec', default='1.0')
     # 参数配置文件在功能包中的文件夹路径
-    configuration_directory = LaunchConfiguration('configuration_directory',default= os.path.join(pkg_share_dir, 'config') )
+    configuration_directory = LaunchConfiguration(
+        'configuration_directory',
+        default=os.path.join(pkg_share_dir, 'config'))
     # 参数配置文件的名称
-    configuration_basename = LaunchConfiguration('configuration_basename', default='provider_odom.lua')
+    configuration_basename = LaunchConfiguration(
+        'configuration_basename', default='provider_odom.lua')
+    # 从 TF 生成里程计消息时使用的坐标系和发布频率
+    odom_frame = LaunchConfiguration('odom_frame', default='odom')
+    base_frame = LaunchConfiguration('base_frame', default='base_footprint')
+    odom_publish_rate = LaunchConfiguration(
+        'odom_publish_rate', default='50.0')
 
- ################ 启动节点：cartographer_node、cartographer_occupancy_grid_node、rviz2 ###################
+    # 启动节点：cartographer_node、tf_to_odom_node
     cartographer_node = Node(
         package='cartographer_ros',
         executable='cartographer_node',
@@ -50,18 +53,22 @@ def generate_launch_description():
         remappings=[('map', '/map_cartographer')]
         )
 
-    cartographer_occupancy_grid_node = Node(
-        package='cartographer_ros',
-        executable='cartographer_occupancy_grid_node',
-        name='cartographer_occupancy_grid_node',
+    tf_to_odom_node = Node(
+        package='jdbot_slam',
+        executable='tf_to_odom_node',
+        name='tf_to_odom_node',
         output='screen',
-        parameters=[{'use_sim_time': use_sim_time}],
-        arguments=['-resolution', resolution, '-publish_period_sec', publish_period_sec],
-        remappings=[('map', '/map_cartographer')])
-
+        parameters=[{
+            'use_sim_time': use_sim_time,
+            'parent_frame': odom_frame,
+            'child_frame': base_frame,
+            'publish_rate': odom_publish_rate,
+        }],
+        remappings=[('odom', '/odom')],
+    )
 
     ld = LaunchDescription()
     ld.add_action(cartographer_node)
-    ld.add_action(cartographer_occupancy_grid_node)
+    ld.add_action(tf_to_odom_node)
 
     return ld
