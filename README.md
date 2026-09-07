@@ -65,13 +65,13 @@ ros2 launch jdbot_slam cartographer_odom.launch.py
 ros2 run teleop_twist_keyboard teleop_twist_keyboard
 ```
 
-### 启动激光雷达
+## 2d 激光建图
+
+启动激光雷达
 
 ```bash
 ros2 launch jdbot_base_bringup start_ydlidar.launch.py
 ```
-
-## 建图
 
 ### slam_toolbox
 
@@ -95,7 +95,13 @@ ros2 launch jdbot_slam cartographer.launch.py
 ros2 run nav2_map_server map_saver_cli -f my_map
 ```
 
-## 导航
+## 2d 激光导航
+
+启动激光雷达
+
+```bash
+ros2 launch jdbot_base_bringup start_ydlidar.launch.py
+```
 
 ```bash
 cp my_map.* ~/jdbot_ws/install/jdbot_navigation/share/jdbot_navigation/map/
@@ -104,3 +110,42 @@ cp my_map.* ~/jdbot_ws/install/jdbot_navigation/share/jdbot_navigation/map/
 ```bash
 ros2 launch jdbot_navigation lidar_nav2.launch.py
 ```
+
+## rgbd 建图
+
+### cartographer 里程计
+
+启动雷达
+
+```bash
+ros2 launch jdbot_base_bringup start_ydlidar.launch.py
+```
+
+realsense 相机
+
+```bash
+ros2 launch realsense2_camera rs_launch.py camera_namespace:=/
+```
+
+底盘
+
+```bash
+ros2 launch jdbot_base_bringup start_control_esp32_c6.launch.py publish_tf:=false odom_topic:=odom_base wheel_base:=0.270 wheel_diameter:=0.065
+```
+
+里程计
+
+```bash
+ros2 launch jdbot_slam cartographer_odom.launch.py
+```
+
+建图
+
+```bash
+ros2 launch jdbot_slam rtabmap_rgbd.launch.py
+```
+
+### rtabmap icp 里程计
+
+雷达、相机、底盘同上
+
