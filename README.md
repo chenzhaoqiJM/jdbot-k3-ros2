@@ -98,5 +98,9 @@ ros2 run nav2_map_server map_saver_cli -f my_map
 ## 导航
 
 ```bash
+cp my_map.* ~/jdbot_ws/install/jdbot_navigation/share/jdbot_navigation/map/
+```
+
+```bash
 ros2 launch jdbot_navigation lidar_nav2.launch.py
 ```
