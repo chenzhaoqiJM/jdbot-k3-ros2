@@ -152,7 +152,7 @@ ros2 launch jdbot_slam rtabmap_rgbd.launch.py localization:=true
 ```
 
 ```bash
-ros2 launch jdbot_navigation nav2_rtabmap.launch.py
+ros2 launch jdbot_navigation nav2_rtabmap.launch.py controller_type:=mpc # 默认rpp
 ```
 
 ### rtabmap icp 里程计
