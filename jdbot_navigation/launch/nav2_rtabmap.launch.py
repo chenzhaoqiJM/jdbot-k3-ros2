@@ -8,7 +8,7 @@ from launch.substitutions import LaunchConfiguration, PythonExpression
 
 
 def generate_launch_description():
-    use_sim_time = LaunchConfiguration('use_sim_time', default='true')
+    use_sim_time = LaunchConfiguration('use_sim_time', default='false')
     controller_type = LaunchConfiguration('controller_type')
 
     custom_nav_dir = get_package_share_directory('jdbot_navigation')
