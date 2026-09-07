@@ -1,8 +1,9 @@
-"""Launch RGB-D RTAB-Map with RTAB-Map visual odometry.
+"""Launch RGB-D RTAB-Map with depth-cloud ICP odometry on the real robot.
 
 Unlike ``rtabmap_rgbd.launch.py``, this launch file does not require an
-external odometry source.  ``rgbd_odometry`` publishes ``/odom`` and the
-``odom -> base_footprint`` transform from the RGB-D camera stream.
+external odometry source.  The depth stream is converted to a point cloud,
+then ``icp_odometry`` publishes ``/odom`` and the ``odom -> base_footprint``
+transform.
 """
 
 from launch import LaunchDescription
@@ -21,30 +22,44 @@ def generate_launch_description():
     rgb_topic = LaunchConfiguration('rgb_topic')
     depth_topic = LaunchConfiguration('depth_topic')
     camera_info_topic = LaunchConfiguration('camera_info_topic')
+    depth_camera_info_topic = LaunchConfiguration(
+        'depth_camera_info_topic')
+    cloud_topic = LaunchConfiguration('cloud_topic')
     odom_topic = LaunchConfiguration('odom_topic')
     approx_sync = LaunchConfiguration('approx_sync')
+    approx_sync_max_interval = LaunchConfiguration(
+        'approx_sync_max_interval')
+    topic_queue_size = LaunchConfiguration('topic_queue_size')
+    sync_queue_size = LaunchConfiguration('sync_queue_size')
+    qos = LaunchConfiguration('qos')
+    launch_viz = LaunchConfiguration('launch_viz')
     min_inliers = LaunchConfiguration('min_inliers')
     odom_reset_countdown = LaunchConfiguration('odom_reset_countdown')
 
     parameters = {
         'frame_id': base_frame_id,
         # Keep this empty so RTAB-Map consumes the synchronized /odom topic.
-        # rgbd_odometry below still publishes the configured odom TF frame.
+        # icp_odometry below still publishes the configured odom TF frame.
         'odom_frame_id': '',
         'use_sim_time': use_sim_time,
         'subscribe_depth': True,
         'subscribe_odom': True,
         'approx_sync': approx_sync,
+        'approx_sync_max_interval': approx_sync_max_interval,
+        'topic_queue_size': topic_queue_size,
+        'sync_queue_size': sync_queue_size,
+        'qos': qos,
+        'qos_camera_info': qos,
         'use_action_for_goal': True,
         'Rtabmap/DetectionRate': '8.0',
         'Reg/Force3DoF': 'true',
         'Vis/MinInliers': ParameterValue(min_inliers, value_type=str),
         'Grid/RayTracing': 'true',
-        'Grid/3D': 'true',
+        'Grid/3D': 'false',
         'Grid/RangeMax': '3',
         'Grid/NormalsSegmentation': 'false',
         'Grid/MaxGroundHeight': '0.05',
-        'Grid/MaxObstacleHeight': '0.6',
+        'Grid/MaxObstacleHeight': '0.4',
         'Optimizer/GravitySigma': '0',
     }
 
@@ -55,24 +70,39 @@ def generate_launch_description():
     ]
     slam_remappings = rgbd_remappings + [('odom', odom_topic)]
 
-    rgbd_odometry = Node(
+    icp_odometry = Node(
         package='rtabmap_odom',
-        executable='rgbd_odometry',
-        name='rgbd_odometry',
+        executable='icp_odometry',
+        name='icp_odometry',
         output='screen',
         parameters=[{
             'frame_id': base_frame_id,
             'odom_frame_id': odom_frame_id,
             'use_sim_time': use_sim_time,
             'publish_tf': True,
-            'approx_sync': approx_sync,
+            'topic_queue_size': topic_queue_size,
+            'sync_queue_size': sync_queue_size,
+            'qos': qos,
             'wait_for_transform': 0.2,
+            'scan_voxel_size': 0.05,
+            'scan_normal_k': 5,
             'Reg/Force3DoF': 'true',
-            'Vis/MinInliers': ParameterValue(min_inliers, value_type=str),
             'Odom/ResetCountdown': ParameterValue(
                 odom_reset_countdown, value_type=str),
+            'Odom/ScanKeyFrameThr': '0.6',
+            'Icp/PointToPlane': 'true',
+            'Icp/PointToPlaneK': '0',
+            'Icp/VoxelSize': '0',
+            'Icp/MaxCorrespondenceDistance': '0.1',
+            'Icp/CorrespondenceRatio': '0.1',
         }],
-        remappings=rgbd_remappings + [('odom', odom_topic)],
+        remappings=[
+            # The real robot also publishes /scan. Keep ICP odometry bound
+            # exclusively to the cloud generated from the depth camera.
+            ('scan', '/rtabmap/unused_scan'),
+            ('scan_cloud', cloud_topic),
+            ('odom', odom_topic),
+        ],
     )
 
     rtabmap_slam = Node(
@@ -100,6 +130,7 @@ def generate_launch_description():
     )
 
     rtabmap_viz = Node(
+        condition=IfCondition(launch_viz),
         package='rtabmap_viz',
         executable='rtabmap_viz',
         name='rtabmap_viz',
@@ -117,11 +148,12 @@ def generate_launch_description():
             'decimation': 2,
             'max_depth': 3.0,
             'voxel_size': 0.02,
+            'qos': qos,
         }],
         remappings=[
             ('depth/image', depth_topic),
-            ('depth/camera_info', camera_info_topic),
-            ('cloud', '/camera/cloud'),
+            ('depth/camera_info', depth_camera_info_topic),
+            ('cloud', cloud_topic),
         ],
     )
 
@@ -131,7 +163,7 @@ def generate_launch_description():
         output='screen',
         parameters=[parameters],
         remappings=[
-            ('cloud', '/camera/cloud'),
+            ('cloud', cloud_topic),
             ('obstacles', '/camera/obstacles'),
             ('ground', '/camera/ground'),
         ],
@@ -140,7 +172,7 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument(
             'use_sim_time',
-            default_value='true',
+            default_value='false',
             description='Use the simulation clock.'),
         DeclareLaunchArgument(
             'localization',
@@ -149,49 +181,79 @@ def generate_launch_description():
         DeclareLaunchArgument(
             'base_frame_id',
             default_value='base_footprint',
-            description='Robot base frame used by visual odometry.'),
+            description='Robot base frame used by ICP odometry.'),
         DeclareLaunchArgument(
             'odom_frame_id',
             default_value='odom',
-            description='Frame published by RTAB-Map visual odometry.'),
+            description='Frame published by RTAB-Map ICP odometry.'),
         DeclareLaunchArgument(
             'odom_topic',
             default_value='/odom',
-            description='Odometry topic published by rgbd_odometry.'),
+            description='Odometry topic published by icp_odometry.'),
         DeclareLaunchArgument(
             'rgb_topic',
-            default_value='/camera/image_raw',
+            default_value='/camera/color/image_raw',
             description='RGB image topic.'),
         DeclareLaunchArgument(
             'depth_topic',
-            default_value='/camera/depth/image_raw',
-            description='Registered depth image topic.'),
+            default_value='/camera/depth/image_rect_raw',
+            description='Rectified/registered depth image topic.'),
         DeclareLaunchArgument(
             'camera_info_topic',
-            default_value='/camera/camera_info',
+            default_value='/camera/color/camera_info',
             description='Camera calibration topic for the RGB image.'),
         DeclareLaunchArgument(
+            'depth_camera_info_topic',
+            default_value='/camera/depth/camera_info',
+            description='Camera calibration topic for the depth image.'),
+        DeclareLaunchArgument(
+            'cloud_topic',
+            default_value='/camera/cloud',
+            description='Point cloud generated from the depth image.'),
+        DeclareLaunchArgument(
             'approx_sync',
-            default_value='false',
+            default_value='true',
             description=(
-                'Use approximate RGB/depth synchronization. Gazebo RGB-D '
-                'streams should normally use false.')),
+                'Use approximate RGB/depth synchronization for hardware '
+                'camera streams.')),
+        DeclareLaunchArgument(
+            'approx_sync_max_interval',
+            default_value='0.05',
+            description='Maximum RGB/depth timestamp difference in seconds.'),
+        DeclareLaunchArgument(
+            'topic_queue_size',
+            default_value='30',
+            description='Queue size for individual camera subscriptions.'),
+        DeclareLaunchArgument(
+            'sync_queue_size',
+            default_value='30',
+            description='Queue size for the RGB-D synchronizer.'),
+        DeclareLaunchArgument(
+            'qos',
+            default_value='2',
+            choices=['0', '1', '2'],
+            description=(
+                'Camera QoS: 0=system default, 1=reliable, 2=best effort.')),
+        DeclareLaunchArgument(
+            'launch_viz',
+            default_value='false',
+            description='Launch rtabmap_viz (disabled to save robot CPU).'),
         DeclareLaunchArgument(
             'min_inliers',
-            default_value='10',
+            default_value='20',
             description=(
-                'Minimum visual registration inliers. Lower values help in '
-                'low-texture simulation scenes but reduce robustness.')),
+                'Minimum visual registration inliers. Increase this value '
+                'to reject weak matches.')),
         DeclareLaunchArgument(
             'odom_reset_countdown',
-            default_value='1',
+            default_value='5',
             description=(
-                'Reset visual odometry after this many consecutive lost '
+                'Reset ICP odometry after this many consecutive lost '
                 'frames so that tracking can recover. Zero disables reset.')),
-        rgbd_odometry,
+        point_cloud_xyz,
+        icp_odometry,
         rtabmap_slam,
         rtabmap_localization,
         rtabmap_viz,
-        point_cloud_xyz,
         obstacles_detection,
     ])
