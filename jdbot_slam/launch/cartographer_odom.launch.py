@@ -35,6 +35,7 @@ def generate_launch_description():
     # 参数配置文件的名称
     configuration_basename = LaunchConfiguration(
         'configuration_basename', default='provider_odom.lua')
+    scan_topic = LaunchConfiguration('scan_topic', default='/scan')
     # 从 TF 生成里程计消息时使用的坐标系和发布频率
     odom_frame = LaunchConfiguration('odom_frame', default='odom')
     base_frame = LaunchConfiguration('base_frame', default='base_footprint')
@@ -50,7 +51,10 @@ def generate_launch_description():
         parameters=[{'use_sim_time': use_sim_time}],
         arguments=['-configuration_directory', configuration_directory,
                    '-configuration_basename', configuration_basename],
-        remappings=[('map', '/map_cartographer')]
+        remappings=[
+            ('map', '/map_cartographer'),
+            ('scan', scan_topic),
+        ]
         )
 
     tf_to_odom_node = Node(

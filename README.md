@@ -113,14 +113,6 @@ ros2 launch jdbot_navigation lidar_nav2.launch.py
 
 ## rgbd 建图
 
-### cartographer 里程计
-
-启动雷达
-
-```bash
-ros2 launch jdbot_base_bringup start_ydlidar.launch.py
-```
-
 realsense 相机
 
 ```bash
@@ -133,7 +125,11 @@ ros2 launch realsense2_camera rs_launch.py camera_namespace:=/
 ros2 launch jdbot_base_bringup start_control_esp32_c6.launch.py publish_tf:=false odom_topic:=odom_base wheel_base:=0.185 wheel_diameter:=0.065 min_angular_speed:=0.4
 ```
 
-里程计
+雷达里程计
+
+```bash
+ros2 launch jdbot_base_bringup start_ydlidar.launch.py
+```
 
 ```bash
 ros2 launch jdbot_slam cartographer_odom.launch.py
@@ -145,10 +141,22 @@ ros2 launch jdbot_slam cartographer_odom.launch.py
 ros2 launch jdbot_slam rtabmap_rgbd.launch.py
 ```
 
+或
+
+```bash
+ros2 launch jdbot_slam rtabmap_rgbd_icp_odom.launch.py # 无需雷达里程计
+```
+
 导航模式
 
 ```bash
 ros2 launch jdbot_slam rtabmap_rgbd.launch.py localization:=true
+```
+
+或
+
+```bash
+ros2 launch jdbot_slam rtabmap_rgbd_icp_odom.launch.py localization:=true # 无需雷达里程计
 ```
 
 ```bash
