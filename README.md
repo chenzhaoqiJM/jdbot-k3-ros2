@@ -145,6 +145,16 @@ ros2 launch jdbot_slam cartographer_odom.launch.py
 ros2 launch jdbot_slam rtabmap_rgbd.launch.py
 ```
 
+导航模式
+
+```bash
+ros2 launch jdbot_slam rtabmap_rgbd.launch.py localization:=true
+```
+
+```bash
+ros2 launch jdbot_navigation nav2_rtabmap.launch.py
+```
+
 ### rtabmap icp 里程计
 
 雷达、相机、底盘同上
