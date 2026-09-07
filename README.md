@@ -4,7 +4,7 @@
 sudo apt install python3-zmq python3-serial python3-transforms3d \
 libspdlog-dev libconsole-bridge-dev liborocos-kdl-dev nlohmann-json3-dev liblgpio-dev \
 liblttng-ust-dev libgpiod-dev ros-humble-camera-info-manager ros-humble-slam-toolbox \
-ros-humble-cartographer ros-humble-cartographer-ros ros-humble-nav2*
+ros-humble-cartographer ros-humble-cartographer-ros ros-humble-nav2* 'ros-humble-rtabmap*' ros-humble-aruco-markers-msgs
 ```
 
 
@@ -130,7 +130,7 @@ ros2 launch realsense2_camera rs_launch.py camera_namespace:=/
 底盘
 
 ```bash
-ros2 launch jdbot_base_bringup start_control_esp32_c6.launch.py publish_tf:=false odom_topic:=odom_base wheel_base:=0.270 wheel_diameter:=0.065
+ros2 launch jdbot_base_bringup start_control_esp32_c6.launch.py publish_tf:=false odom_topic:=odom_base wheel_base:=0.185 wheel_diameter:=0.065 min_angular_speed:=0.4
 ```
 
 里程计
