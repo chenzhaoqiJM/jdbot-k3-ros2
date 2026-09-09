@@ -21,3 +21,20 @@ rm -rf librealsense-2.57.4 librealsense-2.57.4.tar.gz
 ```bash
 ros2 launch realsense2_camera rs_launch.py camera_namespace:=/
 ```
+
+
+雷达里程计
+
+```bash
+ros2 launch jdbot_base_bringup start_ydlidar.launch.py
+```
+
+```bash
+ros2 launch jdbot_slam cartographer_odom.launch.py
+```
+
+建图
+
+```bash
+ros2 launch jdbot_slam rtabmap_rgbd.launch.py
+```
