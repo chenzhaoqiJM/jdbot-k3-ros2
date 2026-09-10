@@ -37,7 +37,7 @@ git clone -b M10/M10-PHY_V1.0 https://github.com/Lslidar/Lslidar_ROS2_driver.git
 source /opt/ros/humble/setup.bash
 cd ~/jdbot_ws
 export CMAKE_PREFIX_PATH=/opt/orbslam3:${CMAKE_PREFIX_PATH}
-colcon build --cmake-clean-cache --cmake-args -DCMAKE_BUILD_TYPE=Release
+colcon build --cmake-clean-cache --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5
 ```
 
 或者跳过 orb slam 的编译
