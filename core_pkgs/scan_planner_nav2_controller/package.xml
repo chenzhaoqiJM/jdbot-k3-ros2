@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>scan_planner_nav2_controller</name>
+  <version>0.1.0</version>
+  <description>Nav2 controller plugin retaining SCAN-Planner's A-star guided rebound B-spline local planning.</description>
+  <maintainer email="zhaoqi.chen@spacemit.com">chenzhaoqi</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <depend>geometry_msgs</depend>
+  <depend>nav2_core</depend>
+  <depend>nav2_costmap_2d</depend>
+  <depend>nav_msgs</depend>
+  <depend>pluginlib</depend>
+  <depend>rclcpp</depend>
+  <depend>rclcpp_lifecycle</depend>
+  <depend>tf2</depend>
+  <depend>tf2_geometry_msgs</depend>
+  <depend>tf2_ros</depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+    <nav2_core plugin="${prefix}/scan_planner_controller_plugin.xml"/>
+  </export>
+</package>

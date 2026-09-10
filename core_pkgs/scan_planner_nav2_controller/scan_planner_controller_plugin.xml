@@ -1,0 +1,7 @@
+<library path="scan_planner_nav2_controller">
+  <class
+    type="scan_planner_nav2_controller::ScanPlannerController"
+    base_class_type="nav2_core::Controller">
+    <description>SCAN-Planner inspired A-star rebound B-spline local controller for Nav2.</description>
+  </class>
+</library>
