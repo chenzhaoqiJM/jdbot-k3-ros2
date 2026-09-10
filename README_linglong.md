@@ -26,6 +26,13 @@ ros2 launch realsense2_camera rs_launch.py camera_namespace:=/ \
   align_depth.enable:=true enable_sync:=true
 ```
 
+```bash
+ros2 launch realsense2_camera rs_launch.py camera_namespace:=/ \
+  enable_color:=true enable_depth:=true \
+  rgb_camera.color_profile:=1280,720,10 \
+  depth_module.depth_profile:=848,480,10 \
+  align_depth.enable:=true enable_sync:=true
+```
 
 雷达里程计
 
@@ -46,19 +53,14 @@ ros2 launch orbslam3_ros2 rgbd.launch.py \
   base_frame:=base_footprint \
   color_topic:=/camera/color/image_raw \
   depth_topic:=/camera/aligned_depth_to_color/image_raw \
-  odom_topic:=/odom \
   tracking_state_topic:=/localization/orb_tracking_state
 ```
 
-或者配套
-
 ```bash
-ros2 launch realsense2_camera rs_launch.py camera_namespace:=/ \
-  enable_color:=true enable_depth:=true \
-  rgb_camera.color_profile:=1280,720,10 \
-  depth_module.depth_profile:=848,480,10 \
-  align_depth.enable:=true enable_sync:=true
+ros2 run jdbot_slam tf_to_odom_node
 ```
+
+或者配套
 
 ```bash
 ros2 launch orbslam3_ros2 rgbd.launch.py \
@@ -71,12 +73,21 @@ ros2 launch orbslam3_ros2 rgbd.launch.py \
     base_frame:=base_footprint \
     color_topic:=/camera/color/image_raw \
     depth_topic:=/camera/aligned_depth_to_color/image_raw \
-    odom_topic:=/odom \
     tracking_state_topic:=/localization/orb_tracking_state
+```
+
+```bash
+ros2 run jdbot_slam tf_to_odom_node
 ```
 
 建图
 
 ```bash
 ros2 launch jdbot_slam rtabmap_rgbd.launch.py
+```
+
+导航
+
+```bash
+ros2 launch jdbot_navigation nav2_rtabmap.launch.py controller_type:=mpc # 默认rpp
 ```
