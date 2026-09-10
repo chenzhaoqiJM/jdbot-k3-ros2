@@ -1,0 +1,71 @@
+# ORB-SLAM3 RGB-D 里程计（D455 / ROS 2 Humble）
+
+本包使用 Intel RealSense D455 运行无界面的 ORB-SLAM3 RGB-D 里程计，并在
+`/orbslam3/odom` 发布米制里程计，在 `/orbslam3/tracking_state` 发布跟踪状态。
+跟踪状态为 `2` 表示跟踪正常。
+
+## 运行方法
+
+使用经过实机验证、兼容 USB 2 的 640×480@15 配置启动 D455：
+
+```bash
+source /opt/ros/humble/setup.bash
+source ~/jdbot_ws/install/setup.bash
+ros2 launch realsense2_camera rs_launch.py camera_namespace:=/ \
+  enable_color:=true enable_depth:=true \
+  rgb_camera.color_profile:=640,480,15 \
+  depth_module.depth_profile:=640,480,15 \
+  align_depth.enable:=true enable_sync:=true
+```
+
+在另一个终端启动 ORB-SLAM3：
+
+```bash
+source /opt/ros/humble/setup.bash
+source ~/orbslam3_ws/install/setup.bash
+ros2 launch orbslam3_ros2 rgbd.launch.py
+```
+
+所有节点参数均可在 launch 命令行中覆盖。例如启用 TF 并修改坐标系名称：
+
+```bash
+ros2 launch orbslam3_ros2 rgbd.launch.py \
+  publish_tf:=true \
+  odom_frame:=odom \
+  base_frame:=base_link \
+  color_topic:=/camera/color/image_raw \
+  depth_topic:=/camera/aligned_depth_to_color/image_raw \
+  odom_topic:=/localization/orb_odom \
+  tracking_state_topic:=/localization/orb_tracking_state
+```
+
+查看全部可配置参数及其默认值：
+
+```bash
+ros2 launch orbslam3_ros2 rgbd.launch.py --show-args
+```
+
+快速检查运行状态：
+
+```bash
+ros2 topic echo /orbslam3/tracking_state --once
+ros2 topic hz /orbslam3/odom
+ros2 topic echo /orbslam3/odom --once
+```
+
+launch 文件中有意将 `publish_tf` 设置为 `false`，这样可以与 Cartographer
+里程计进行对比，同时避免多个节点为 `base_footprint` 发布不同的 TF 父节点。
+
+ORB-SLAM3 和 Pangolin 已安装到 `/opt/orbslam3`。动态库目录通过
+`/etc/ld.so.conf.d/orbslam3.conf` 注册，因此不需要设置指向用户 home 目录的
+`LD_LIBRARY_PATH`。只有使用其他依赖安装前缀时，才需要在启动前设置
+`ORB_SLAM3_PREFIX`。
+
+完整的编译和部署过程参见 `docs/编译与分发说明.md`。
+
+## 当前硬件连接情况
+
+当前 D455 被枚举为 USB 2.1 设备。Librealsense 2.57.7 报告
+`No HID info provided, IMU is disabled`，且当前连接无法提供 ORB-SLAM3
+双目惯性模式所需的两路 Y8 红外图像。因此目前经过验收的是 RGB-D 模式，
+本包暂不使用 IMU。

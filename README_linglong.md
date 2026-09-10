@@ -19,7 +19,11 @@ rm -rf librealsense-2.57.4 librealsense-2.57.4.tar.gz
 ```
 
 ```bash
-ros2 launch realsense2_camera rs_launch.py camera_namespace:=/
+ros2 launch realsense2_camera rs_launch.py camera_namespace:=/ \
+  enable_color:=true enable_depth:=true \
+  rgb_camera.color_profile:=640,480,15 \
+  depth_module.depth_profile:=640,480,15 \
+  align_depth.enable:=true enable_sync:=true
 ```
 
 

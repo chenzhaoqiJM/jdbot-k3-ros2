@@ -31,6 +31,23 @@ git clone -b M10/M10-PHY_V1.0 https://github.com/Lslidar/Lslidar_ROS2_driver.git
 
 修改参数文件以使用
 
+## 编译说明
+
+```bash
+source /opt/ros/humble/setup.bash
+cd ~/jdbot_ws
+export CMAKE_PREFIX_PATH=/opt/orbslam3:${CMAKE_PREFIX_PATH}
+colcon build --cmake-clean-cache --cmake-args -DCMAKE_BUILD_TYPE=Release
+```
+
+或者跳过 orb slam 的编译
+
+```bash
+source /opt/ros/humble/setup.bash
+cd ~/jdbot_ws
+colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release --packages-skip orbslam3_ros2
+```
+
 
 ## 3D SLAM
 
