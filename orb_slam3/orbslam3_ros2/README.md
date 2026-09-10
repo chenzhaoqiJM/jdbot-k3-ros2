@@ -53,6 +53,35 @@ ros2 topic hz /orbslam3/odom
 ros2 topic echo /orbslam3/odom --once
 ```
 
+## 1280×720 导航图像与低分辨率 ORB 跟踪
+
+当前 USB 2.1 连接下，实测可用的高分辨率组合为彩色 1280×720@10、深度
+848×480@10；对齐后的深度图为 1280×720。导航模块可以直接订阅原始高分辨率
+话题，ORB 节点则在内部把彩色图以面积插值、深度图以最近邻插值缩小到
+640×360：
+
+```bash
+ros2 launch realsense2_camera rs_launch.py camera_namespace:=/ \
+  enable_color:=true enable_depth:=true \
+  rgb_camera.color_profile:=1280,720,10 \
+  depth_module.depth_profile:=848,480,10 \
+  align_depth.enable:=true enable_sync:=true
+```
+
+```bash
+source /opt/ros/humble/setup.bash
+source ~/jdbot_ws/install/setup.bash
+ros2 launch orbslam3_ros2 rgbd.launch.py \
+  settings:=$(ros2 pkg prefix orbslam3_ros2)/share/orbslam3_ros2/config/d455_rgbd_1280x720_orb_640x360.yaml \
+  resize_for_orb:=true \
+  tracking_width:=640 \
+  tracking_height:=360
+```
+
+不要将现有 640×480 内参直接用于 1280×720 图像。上述配置中的内参来自本机
+D455 的 1280×720 `camera_info`，并按 0.5 比例缩放到 640×360。缩放只发生在
+ORB 节点内部，不会改变导航模块收到的原始图像。
+
 launch 文件中有意将 `publish_tf` 设置为 `false`，这样可以与 Cartographer
 里程计进行对比，同时避免多个节点为 `base_footprint` 发布不同的 TF 父节点。
 

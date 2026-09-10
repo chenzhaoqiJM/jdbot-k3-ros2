@@ -37,6 +37,44 @@ ros2 launch jdbot_base_bringup start_ydlidar.launch.py
 ros2 launch jdbot_slam cartographer_odom.launch.py
 ```
 
+orb3 (RGBD) 里程计
+
+```bash
+ros2 launch orbslam3_ros2 rgbd.launch.py \
+  publish_tf:=true \
+  odom_frame:=odom \
+  base_frame:=base_footprint \
+  color_topic:=/camera/color/image_raw \
+  depth_topic:=/camera/aligned_depth_to_color/image_raw \
+  odom_topic:=/odom \
+  tracking_state_topic:=/localization/orb_tracking_state
+```
+
+或者配套
+
+```bash
+ros2 launch realsense2_camera rs_launch.py camera_namespace:=/ \
+  enable_color:=true enable_depth:=true \
+  rgb_camera.color_profile:=1280,720,10 \
+  depth_module.depth_profile:=848,480,10 \
+  align_depth.enable:=true enable_sync:=true
+```
+
+```bash
+ros2 launch orbslam3_ros2 rgbd.launch.py \
+    settings:=$(ros2 pkg prefix orbslam3_ros2)/share/orbslam3_ros2/config/d455_rgbd_1280x720_orb_640x360.yaml \
+    resize_for_orb:=true \
+    tracking_width:=640 \
+    tracking_height:=360 \
+    publish_tf:=true \
+    odom_frame:=odom \
+    base_frame:=base_footprint \
+    color_topic:=/camera/color/image_raw \
+    depth_topic:=/camera/aligned_depth_to_color/image_raw \
+    odom_topic:=/odom \
+    tracking_state_topic:=/localization/orb_tracking_state
+```
+
 建图
 
 ```bash

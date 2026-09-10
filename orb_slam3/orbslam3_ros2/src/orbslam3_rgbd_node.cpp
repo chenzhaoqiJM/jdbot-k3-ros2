@@ -1,7 +1,9 @@
 #include <chrono>
 #include <memory>
 #include <mutex>
+#include <stdexcept>
 #include <string>
+#include <utility>
 
 #include <Eigen/Geometry>
 #include <System.h>
@@ -11,6 +13,7 @@
 #include <message_filters/sync_policies/approximate_time.h>
 #include <message_filters/synchronizer.h>
 #include <nav_msgs/msg/odometry.hpp>
+#include <opencv2/imgproc.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <std_msgs/msg/u_int8.hpp>
@@ -27,6 +30,14 @@ class OrbSlam3RgbdNode final : public rclcpp::Node {
     publish_tf_ = declare_parameter<bool>("publish_tf", false);
     odom_frame_ = declare_parameter<std::string>("odom_frame", "orb_odom");
     base_frame_ = declare_parameter<std::string>("base_frame", "base_footprint");
+    resize_for_orb_ = declare_parameter<bool>("resize_for_orb", false);
+    tracking_width_ = declare_parameter<int>("tracking_width", 640);
+    tracking_height_ = declare_parameter<int>("tracking_height", 360);
+
+    if (resize_for_orb_ && (tracking_width_ <= 0 || tracking_height_ <= 0)) {
+      throw std::invalid_argument(
+          "tracking_width and tracking_height must be positive");
+    }
 
     slam_ = std::make_unique<ORB_SLAM3::System>(
         vocabulary, settings, ORB_SLAM3::System::RGBD, false);
@@ -67,6 +78,10 @@ class OrbSlam3RgbdNode final : public rclcpp::Node {
         t_base_camera_link * t_camera_link_color * t_color_optical;
 
     RCLCPP_INFO(get_logger(), "ORB-SLAM3 RGB-D ready; waiting for synchronized images");
+    if (resize_for_orb_) {
+      RCLCPP_INFO(get_logger(), "ORB tracking images will be resized to %dx%d",
+                  tracking_width_, tracking_height_);
+    }
   }
 
   ~OrbSlam3RgbdNode() override {
@@ -78,8 +93,22 @@ class OrbSlam3RgbdNode final : public rclcpp::Node {
                      const Image::ConstSharedPtr &depth_msg) {
     std::lock_guard<std::mutex> lock(track_mutex_);
     try {
-      const cv::Mat color = cv_bridge::toCvShare(color_msg)->image;
-      const cv::Mat depth = cv_bridge::toCvShare(depth_msg)->image;
+      cv::Mat color = cv_bridge::toCvShare(color_msg)->image;
+      cv::Mat depth = cv_bridge::toCvShare(depth_msg)->image;
+      if (color.size() != depth.size()) {
+        throw std::runtime_error("color and aligned depth image sizes differ");
+      }
+      if (resize_for_orb_ &&
+          (color.cols != tracking_width_ || color.rows != tracking_height_)) {
+        cv::Mat resized_color;
+        cv::Mat resized_depth;
+        const cv::Size tracking_size(tracking_width_, tracking_height_);
+        cv::resize(color, resized_color, tracking_size, 0.0, 0.0, cv::INTER_AREA);
+        cv::resize(depth, resized_depth, tracking_size, 0.0, 0.0,
+                   cv::INTER_NEAREST);
+        color = std::move(resized_color);
+        depth = std::move(resized_depth);
+      }
       const double stamp = rclcpp::Time(color_msg->header.stamp).seconds();
       const Sophus::SE3f t_camera_world = slam_->TrackRGBD(color, depth, stamp);
 
@@ -138,7 +167,10 @@ class OrbSlam3RgbdNode final : public rclcpp::Node {
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
   std::mutex track_mutex_;
   bool publish_tf_{false};
+  bool resize_for_orb_{false};
   bool have_origin_{false};
+  int tracking_width_{640};
+  int tracking_height_{360};
   std::string odom_frame_;
   std::string base_frame_;
   Eigen::Isometry3f t_world_camera_origin_{Eigen::Isometry3f::Identity()};

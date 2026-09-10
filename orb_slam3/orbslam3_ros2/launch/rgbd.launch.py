@@ -33,6 +33,18 @@ def generate_launch_description():
             default_value='base_footprint',
             description='机器人底盘坐标系名称'),
         DeclareLaunchArgument(
+            'resize_for_orb',
+            default_value='false',
+            description='是否仅在 ORB 节点内部缩小彩色图和深度图'),
+        DeclareLaunchArgument(
+            'tracking_width',
+            default_value='640',
+            description='ORB-SLAM3 实际处理的图像宽度'),
+        DeclareLaunchArgument(
+            'tracking_height',
+            default_value='360',
+            description='ORB-SLAM3 实际处理的图像高度'),
+        DeclareLaunchArgument(
             'color_topic',
             default_value='/camera/color/image_raw',
             description='彩色图像输入话题'),
@@ -60,6 +72,12 @@ def generate_launch_description():
                     LaunchConfiguration('publish_tf'), value_type=bool),
                 'odom_frame': LaunchConfiguration('odom_frame'),
                 'base_frame': LaunchConfiguration('base_frame'),
+                'resize_for_orb': ParameterValue(
+                    LaunchConfiguration('resize_for_orb'), value_type=bool),
+                'tracking_width': ParameterValue(
+                    LaunchConfiguration('tracking_width'), value_type=int),
+                'tracking_height': ParameterValue(
+                    LaunchConfiguration('tracking_height'), value_type=int),
             }],
             remappings=[
                 ('/camera/color/image_raw', LaunchConfiguration('color_topic')),
