@@ -90,34 +90,60 @@ controller_server:
       xy_goal_tolerance: 0.10
       yaw_goal_tolerance: 0.25
       stateful: True
+    # FollowPath:
+    #   plugin: "nav2_regulated_pure_pursuit_controller::RegulatedPurePursuitController"
+    #   desired_linear_vel: 0.4
+    #   lookahead_dist: 0.3
+    #   min_lookahead_dist: 0.2
+    #   max_lookahead_dist: 0.6
+    #   lookahead_time: 1.5
+    #   rotate_to_heading_angular_vel: 0.8
+    #   transform_tolerance: 0.2
+    #   use_velocity_scaled_lookahead_dist: true
+    #   min_approach_linear_velocity: 0.03
+    #   approach_velocity_scaling_dist: 0.8
+    #   use_collision_detection: false
+    #   max_allowed_time_to_collision_up_to_carrot: 1.0
+    #   use_regulated_linear_velocity_scaling: true
+    #   use_cost_regulated_linear_velocity_scaling: true
+    #   regulated_linear_scaling_min_radius: 0.2
+    #   regulated_linear_scaling_min_speed: 0.05
+    #   use_rotate_to_heading: true
+    #   rotate_to_heading_min_angle: 0.35
+    #   max_angular_accel: 1.0
+    #   max_robot_pose_search_dist: 3.0
+    #   use_interpolation: true
+    #   cost_scaling_dist: 0.1
+    #   cost_scaling_gain: 0.8
+    #   inflation_cost_scaling_factor: 3.0
+    #   goal_dist_tol: 0.08
+    #   allow_reversing: false
     FollowPath:
-      plugin: "nav2_regulated_pure_pursuit_controller::RegulatedPurePursuitController"
-      desired_linear_vel: 0.4
-      lookahead_dist: 0.3
-      min_lookahead_dist: 0.2
-      max_lookahead_dist: 0.6
-      lookahead_time: 1.5
-      rotate_to_heading_angular_vel: 0.8
-      transform_tolerance: 0.2
-      use_velocity_scaled_lookahead_dist: true
-      min_approach_linear_velocity: 0.03
-      approach_velocity_scaling_dist: 0.8
-      use_collision_detection: false
-      max_allowed_time_to_collision_up_to_carrot: 1.0
-      use_regulated_linear_velocity_scaling: true
-      use_cost_regulated_linear_velocity_scaling: true
-      regulated_linear_scaling_min_radius: 0.2
-      regulated_linear_scaling_min_speed: 0.05
-      use_rotate_to_heading: true
-      rotate_to_heading_min_angle: 0.35
-      max_angular_accel: 1.0
-      max_robot_pose_search_dist: 3.0
-      use_interpolation: true
-      cost_scaling_dist: 0.1
-      cost_scaling_gain: 0.8
-      inflation_cost_scaling_factor: 3.0
-      goal_dist_tol: 0.08
-      allow_reversing: false
+      plugin: "scan_planner_nav2_controller::ScanPlannerController"  # Nav2 控制器插件类型
+      planning_horizon: 2.0          # 局部规划前视范围，单位：米；需保持在滚动局部代价地图内
+      control_point_distance: 0.20   # B 样条相邻控制点的目标间距，单位：米
+      spline_dt: 0.40                # 均匀 B 样条节点时间间隔，单位：秒
+      replan_period: 0.25            # 局部轨迹重新规划周期，单位：秒
+      lookahead_time: 0.60           # 沿优化轨迹选取控制目标的前视时间，单位：秒
+      transform_tolerance: 0.2       # 查询全局路径和机器人位姿变换时的 TF 容忍时间，单位：秒
+      max_linear_velocity: 0.60      # 最大线速度，单位：米/秒
+      max_angular_velocity: 1.00     # 最大角速度，单位：弧度/秒
+      max_acceleration: 0.50         # B 样条优化及速度输出采用的最大线加速度，单位：米/秒²
+      max_angular_acceleration: 1.00 # 单个控制周期允许的最大角加速度，单位：弧度/秒²
+      min_linear_velocity: 0.04      # 未到达目标时使用的最小非零线速度，单位：米/秒
+      position_gain: 1.50            # 轨迹目标点位置误差转换为速度修正量的比例增益
+      yaw_gain: 2.00                 # 航向角误差转换为角速度指令的比例增益
+      rotate_to_heading_angle: 0.50  # 航向误差超过该值时原地转向，单位：弧度
+      goal_dist_tolerance: 0.10      # 进入终点航向调整阶段的距离阈值，单位：米
+      collision_clearance: 0.20      # 轨迹控制点与障碍物之间要求的最小净空，单位：米
+      double_cylinder_offset: 0.12   # 机身前后碰撞采样点相对中心的偏移距离，单位：米
+      collision_cost_threshold: 253  # 判定代价地图栅格发生碰撞的最小代价值
+      allow_unknown: false           # 是否允许局部轨迹进入未知代价地图区域
+      lambda_smooth: 1.0             # B 样条平滑性代价权重
+      lambda_collision: 2.0          # 障碍物距离及碰撞代价权重
+      lambda_feasibility: 0.15       # 速度和加速度动力学可行性代价权重
+      lambda_fitness: 0.20           # 优化轨迹贴合 Nav2 全局参考路径的代价权重
+      max_iterations: 60             # 单次局部 B 样条优化允许的最大迭代次数
 
 local_costmap:
   local_costmap:
