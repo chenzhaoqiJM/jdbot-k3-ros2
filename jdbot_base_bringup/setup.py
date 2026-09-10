@@ -23,7 +23,9 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'ros2_ctrl_odom_node = jdbot_base_bringup.ros2_ctrl_odom_node:main'
+            'ros2_ctrl_odom_node = jdbot_base_bringup.ros2_ctrl_odom_node:main',
+            'orbslam3_odom_to_tf = '
+            'jdbot_base_bringup.orbslam3_odom_to_tf:main',
         ],
     },
 )
