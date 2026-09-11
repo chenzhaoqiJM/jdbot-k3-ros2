@@ -18,6 +18,8 @@
 import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument
+from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
@@ -41,6 +43,7 @@ def generate_launch_description():
     base_frame = LaunchConfiguration('base_frame', default='base_footprint')
     odom_publish_rate = LaunchConfiguration(
         'odom_publish_rate', default='50.0')
+    launch_tf_to_odom = LaunchConfiguration('launch_tf_to_odom')
 
     # 启动节点：cartographer_node、tf_to_odom_node
     cartographer_node = Node(
@@ -62,6 +65,7 @@ def generate_launch_description():
         executable='tf_to_odom_node',
         name='tf_to_odom_node',
         output='screen',
+        condition=IfCondition(launch_tf_to_odom),
         parameters=[{
             'use_sim_time': use_sim_time,
             'parent_frame': odom_frame,
@@ -72,6 +76,10 @@ def generate_launch_description():
     )
 
     ld = LaunchDescription()
+    ld.add_action(DeclareLaunchArgument(
+        'launch_tf_to_odom',
+        default_value='true',
+        description='Whether to launch tf_to_odom_node'))
     ld.add_action(cartographer_node)
     ld.add_action(tf_to_odom_node)
 
