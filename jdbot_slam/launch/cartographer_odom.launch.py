@@ -43,6 +43,14 @@ def generate_launch_description():
     base_frame = LaunchConfiguration('base_frame', default='base_footprint')
     odom_publish_rate = LaunchConfiguration(
         'odom_publish_rate', default='50.0')
+    velocity_filter_alpha = LaunchConfiguration(
+        'velocity_filter_alpha', default='0.35')
+    max_sample_interval = LaunchConfiguration(
+        'max_sample_interval', default='1.0')
+    max_linear_velocity = LaunchConfiguration(
+        'max_linear_velocity', default='3.0')
+    max_angular_velocity = LaunchConfiguration(
+        'max_angular_velocity', default='6.0')
     launch_tf_to_odom = LaunchConfiguration('launch_tf_to_odom')
 
     # 启动节点：cartographer_node、tf_to_odom_node
@@ -71,6 +79,10 @@ def generate_launch_description():
             'parent_frame': odom_frame,
             'child_frame': base_frame,
             'publish_rate': odom_publish_rate,
+            'velocity_filter_alpha': velocity_filter_alpha,
+            'max_sample_interval': max_sample_interval,
+            'max_linear_velocity': max_linear_velocity,
+            'max_angular_velocity': max_angular_velocity,
         }],
         remappings=[('odom', '/odom')],
     )
@@ -80,6 +92,22 @@ def generate_launch_description():
         'launch_tf_to_odom',
         default_value='true',
         description='Whether to launch tf_to_odom_node'))
+    ld.add_action(DeclareLaunchArgument(
+        'velocity_filter_alpha',
+        default_value='0.35',
+        description='Low-pass filter alpha for estimated velocity'))
+    ld.add_action(DeclareLaunchArgument(
+        'max_sample_interval',
+        default_value='1.0',
+        description='Maximum TF sample interval used for velocity estimation'))
+    ld.add_action(DeclareLaunchArgument(
+        'max_linear_velocity',
+        default_value='3.0',
+        description='Maximum accepted linear velocity in m/s'))
+    ld.add_action(DeclareLaunchArgument(
+        'max_angular_velocity',
+        default_value='6.0',
+        description='Maximum accepted angular velocity in rad/s'))
     ld.add_action(cartographer_node)
     ld.add_action(tf_to_odom_node)
 
