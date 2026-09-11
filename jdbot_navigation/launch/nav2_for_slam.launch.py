@@ -15,7 +15,7 @@ def generate_launch_description():
 
     nav2_launch_dir = os.path.join(get_package_share_directory('nav2_bringup'), 'launch')
 
-    param_file_name = 'jdbot_diff_mpc.yaml'
+    param_file_name = 'jdbot_diff_dev.yaml'
     param_dir = os.path.join(myrobot_nav_dir, 'config')
     param_file = LaunchConfiguration('params', default=os.path.join(param_dir, param_file_name))
 
