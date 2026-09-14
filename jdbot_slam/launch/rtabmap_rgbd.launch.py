@@ -25,6 +25,7 @@ def generate_launch_description():
 
     use_sim_time = LaunchConfiguration('use_sim_time')
     localization = LaunchConfiguration('localization')
+    launch_point_cloud_xyz = LaunchConfiguration('launch_point_cloud_xyz')
 
     parameters={
           'frame_id':'base_footprint',
@@ -57,6 +58,12 @@ def generate_launch_description():
             'localization', default_value='false',
             description='Launch in localization mode.'),
 
+        DeclareLaunchArgument(
+            'launch_point_cloud_xyz', default_value='true',
+            description=(
+                'Launch point_cloud_xyz. Set to false when another launch '
+                'file already publishes /camera/cloud.')),
+
         # Nodes to launch
 
         # SLAM mode:
@@ -85,6 +92,7 @@ def generate_launch_description():
         # First, we need to convert depth image to a point cloud.
         # Second, we segment the floor from the obstacles.
         Node(
+            condition=IfCondition(launch_point_cloud_xyz),
             package='rtabmap_util', executable='point_cloud_xyz', output='screen',
             parameters=[{'decimation': 2,
                          'max_depth': 3.0,
