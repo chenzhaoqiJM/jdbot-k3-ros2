@@ -138,15 +138,19 @@ patchelf --set-rpath '$ORIGIN:/opt/opencv-spacemit/lib' \
   "$STAGE/lib/libORB_SLAM3.so"
 ```
 
-把仓库中的 CMake 包配置安装到暂存目录：
+把仓库中的 RVV 专用 CMake 包配置安装到暂存目录。源文件使用 `-RVV`
+后缀以区别于普通构建模板；安装后必须改为 CMake 约定的标准包配置文件名
+`ORB_SLAM3Config.cmake`，这样 `find_package(ORB_SLAM3 CONFIG REQUIRED)`
+才能找到它：
 
 ```bash
 install -d "$STAGE/lib/cmake/ORB_SLAM3"
-install -m 0644 /path/to/orbslam3_ros2/vendor/ORB_SLAM3Config.cmake \
-  "$STAGE/lib/cmake/ORB_SLAM3/"
+install -m 0644 \
+  /path/to/orbslam3_ros2/vendor/ORB_SLAM3Config-RVV.cmake \
+  "$STAGE/lib/cmake/ORB_SLAM3/ORB_SLAM3Config.cmake"
 ```
 
-该配置锁定 OpenCV 4.14.0，并提供 `ORB_SLAM3::ORB_SLAM3`、
+RVV 配置锁定 OpenCV 4.14.0，并提供 `ORB_SLAM3::ORB_SLAM3`、
 `ORB_SLAM3::DBoW2` 和 `ORB_SLAM3::g2o` 目标。
 
 审核暂存目录后再一次性安装：
@@ -155,8 +159,6 @@ install -m 0644 /path/to/orbslam3_ros2/vendor/ORB_SLAM3Config.cmake \
 sudo install -d /opt/orbslam3
 sudo cp -a "$STAGE"/. /opt/orbslam3/
 
-echo /opt/opencv-spacemit/lib | \
-  sudo tee /etc/ld.so.conf.d/opencv-spacemit.conf
 echo /opt/orbslam3/lib | sudo tee /etc/ld.so.conf.d/orbslam3.conf
 sudo ldconfig
 ```
@@ -292,8 +294,6 @@ sudo tar czf "$HOME/orbslam3-riscv64-rvv.tar.gz" orbslam3
 
 ```bash
 sudo tar xzf orbslam3-riscv64-rvv.tar.gz -C /opt
-echo /opt/opencv-spacemit/lib | \
-  sudo tee /etc/ld.so.conf.d/opencv-spacemit.conf
 echo /opt/orbslam3/lib | sudo tee /etc/ld.so.conf.d/orbslam3.conf
 sudo ldconfig
 ```
