@@ -33,6 +33,61 @@ git clone -b M10/M10-PHY_V1.0 https://github.com/Lslidar/Lslidar_ROS2_driver.git
 
 ## 编译说明
 
+### RVV
+
+环境准备
+
+```bash
+sudo apt install git cmake ninja-build build-essential patchelf \
+  libeigen3-dev opencv-spacemit=4.14.0-2bb4 \
+  libboost-serialization-dev libssl-dev libsuitesparse-dev \
+  libglew-dev libepoxy-dev libx11-dev libwayland-dev \
+  libjpeg-dev libpng-dev libtiff-dev
+```
+
+```bash
+wget https://archive.spacemit.com/ros2/prebuilt_libs/bianbu26/opt/ext/orbslam3_rvv/4452a3c4ab75b1cde34e5505a36ec3f9edcdc4c4/orbslam3.tar.gz
+sudo tar xzf orbslam3.tar.gz -C /opt
+echo /opt/opencv-spacemit/lib | sudo tee /etc/ld.so.conf.d/opencv-spacemit.conf
+echo /opt/orbslam3/lib | sudo tee /etc/ld.so.conf.d/orbslam3.conf
+sudo ldconfig
+```
+
+编译
+
+```bash
+export RVV_C_FLAGS="-O3 -DNDEBUG -march=rv64gcv_zvl256b -mrvv-vector-bits=zvl"
+export RVV_CXX_FLAGS="$RVV_C_FLAGS -DEIGEN_RISCV64_USE_RVV10"
+export OPENCV_PREFIX=/opt/opencv-spacemit
+export OPENCV_DIR="$OPENCV_PREFIX/lib/cmake/opencv4"
+
+source /opt/ros/humble/setup.bash
+cd ~/jdbot_ws
+export CMAKE_PREFIX_PATH="/opt/orbslam3:/opt/opencv-spacemit:$CMAKE_PREFIX_PATH"
+colcon build --cmake-clean-cache \
+  --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_FLAGS_RELEASE="$RVV_C_FLAGS" -DCMAKE_CXX_FLAGS_RELEASE="$RVV_CXX_FLAGS" -DOpenCV_DIR="$OPENCV_DIR"
+```
+
+### 非 RVV
+
+环境准备
+
+```bash
+sudo apt install -y git cmake ninja-build build-essential patchelf \
+  libeigen3-dev libopencv-dev libboost-serialization-dev libssl-dev \
+  libsuitesparse-dev libglew-dev libepoxy-dev \
+  libx11-dev libwayland-dev libjpeg-dev libpng-dev libtiff-dev
+```
+
+```bash
+wget https://archive.spacemit.com/ros2/prebuilt_libs/bianbu26/opt/ext/orbslam3/4452a3c4ab75b1cde34e5505a36ec3f9edcdc4c4/orbslam3.tar.gz
+sudo tar xzf orbslam3.tar.gz -C /opt
+echo /opt/orbslam3/lib | sudo tee /etc/ld.so.conf.d/orbslam3.conf
+sudo ldconfig
+```
+
+编译
+
 ```bash
 source /opt/ros/humble/setup.bash
 cd ~/jdbot_ws
@@ -40,7 +95,7 @@ export CMAKE_PREFIX_PATH=/opt/orbslam3:${CMAKE_PREFIX_PATH}
 colcon build --cmake-clean-cache --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5
 ```
 
-或者跳过 orb slam 的编译
+### 跳过 orb slam 的编译
 
 ```bash
 source /opt/ros/humble/setup.bash
