@@ -48,7 +48,6 @@ sudo apt install git cmake ninja-build build-essential patchelf \
 ```bash
 wget https://archive.spacemit.com/ros2/prebuilt_libs/bianbu26/opt/ext/orbslam3_rvv/4452a3c4ab75b1cde34e5505a36ec3f9edcdc4c4/orbslam3.tar.gz
 sudo tar xzf orbslam3.tar.gz -C /opt
-echo /opt/opencv-spacemit/lib | sudo tee /etc/ld.so.conf.d/opencv-spacemit.conf
 echo /opt/orbslam3/lib | sudo tee /etc/ld.so.conf.d/orbslam3.conf
 sudo ldconfig
 ```
