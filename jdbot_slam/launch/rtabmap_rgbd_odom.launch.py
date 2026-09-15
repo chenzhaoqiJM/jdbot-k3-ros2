@@ -8,7 +8,7 @@ visualization, or obstacle-detection nodes.
 
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
-from launch.substitutions import LaunchConfiguration
+from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
 
@@ -22,6 +22,10 @@ def generate_launch_description():
         'depth_camera_info_topic')
     cloud_topic = LaunchConfiguration('cloud_topic')
     odom_topic = LaunchConfiguration('odom_topic')
+    use_imu = LaunchConfiguration('use_imu')
+    imu_topic = LaunchConfiguration('imu_topic')
+    imu_qos = LaunchConfiguration('imu_qos')
+    always_check_imu_tf = LaunchConfiguration('always_check_imu_tf')
     topic_queue_size = LaunchConfiguration('topic_queue_size')
     sync_queue_size = LaunchConfiguration('sync_queue_size')
     qos = LaunchConfiguration('qos')
@@ -38,6 +42,10 @@ def generate_launch_description():
             'odom_frame_id': odom_frame_id,
             'use_sim_time': use_sim_time,
             'publish_tf': ParameterValue(publish_tf, value_type=bool),
+            'wait_imu_to_init': ParameterValue(use_imu, value_type=bool),
+            'always_check_imu_tf': ParameterValue(
+                always_check_imu_tf, value_type=bool),
+            'qos_imu': imu_qos,
             'topic_queue_size': topic_queue_size,
             'sync_queue_size': sync_queue_size,
             'qos': qos,
@@ -60,6 +68,11 @@ def generate_launch_description():
             # exclusively to the cloud generated from the depth camera.
             ('scan', '/rtabmap/unused_scan'),
             ('scan_cloud', cloud_topic),
+            # Keep IMU completely disconnected unless use_imu is enabled.
+            ('imu', PythonExpression([
+                "'", use_imu, "' == 'true' and '", imu_topic,
+                "' or '/rtabmap/unused_imu'",
+            ])),
             ('odom', odom_topic),
         ],
     )
@@ -99,6 +112,29 @@ def generate_launch_description():
             'odom_topic',
             default_value='/odom',
             description='Odometry topic published by icp_odometry.'),
+        DeclareLaunchArgument(
+            'use_imu',
+            default_value='false',
+            choices=['true', 'false'],
+            description=(
+                'Use IMU orientation as an initial motion estimate for ICP.')),
+        DeclareLaunchArgument(
+            'imu_topic',
+            default_value='/camera/imu',
+            description='sensor_msgs/Imu topic used when use_imu is true.'),
+        DeclareLaunchArgument(
+            'imu_qos',
+            default_value='2',
+            choices=['0', '1', '2'],
+            description=(
+                'IMU QoS: 0=system default, 1=reliable, 2=best effort.')),
+        DeclareLaunchArgument(
+            'always_check_imu_tf',
+            default_value='true',
+            choices=['true', 'false'],
+            description=(
+                'Keep checking the transform from the IMU frame to the '
+                'base frame while IMU input is enabled.')),
         DeclareLaunchArgument(
             'publish_tf',
             default_value='true',
