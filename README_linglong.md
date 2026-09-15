@@ -26,6 +26,12 @@ ros2 launch realsense2_camera rs_launch.py camera_namespace:=/ \
   align_depth.enable:=true enable_sync:=true
 ```
 
+若 HID 驱动已经配置, 添加以下选项开启 IMU 的数据
+
+```bash
+enable_gyro:=true enable_accel:=true unite_imu_method:=2
+```
+
 ```bash
 ros2 launch realsense2_camera rs_launch.py camera_namespace:=/ \
   enable_color:=true enable_depth:=true \
