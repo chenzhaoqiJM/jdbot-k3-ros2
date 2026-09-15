@@ -92,18 +92,21 @@ ros2 run jdbot_slam tf_to_odom_node
 ros2 launch jdbot_slam rtabmap_rgbd_odom.launch.py
 ```
 
+use_imu:=true 参数默认订阅 imu_topic:=/camera/imu
+
 测试用
 
 ```bash
 ros2 launch jdbot_slam rtabmap_rgbd_odom.launch.py odom_topic:=/odom_rtabmap publish_tf:=false
 ```
 
+```bash
 ros2 run jdbot_base_bringup orbslam3_odom_to_tf \
   --ros-args \
   -p odom_topic:=/odom_rtabmap \
   -p parent_frame:=odom \
   -p child_frame:=base_footprint_rm
-
+```
 
 ## 建图
 

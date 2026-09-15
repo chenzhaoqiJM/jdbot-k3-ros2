@@ -36,5 +36,5 @@ set_target_properties(orbslam3_rgbd_node PROPERTIES
   INSTALL_RPATH_USE_LINK_PATH FALSE)
 
 install(TARGETS orbslam3_rgbd_node DESTINATION lib/${PROJECT_NAME})
-install(DIRECTORY config launch docs patches DESTINATION share/${PROJECT_NAME})
+install(DIRECTORY config launch patches DESTINATION share/${PROJECT_NAME})
 ament_package()
