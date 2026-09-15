@@ -1,12 +1,12 @@
 # linglong 机器人建图导航测试
 
-底盘
+## 底盘
 
 ```bash
 ros2 launch jdbot_base_bringup start_control_linglong_esp32_c6.launch.py publish_tf:=false odom_topic:=odom_base wheel_base:=0.270 wheel_diameter:=0.065 min_angular_speed:=0.4
 ```
 
-realsense 相机
+## realsense 相机
 
 ```bash
 cd ~
@@ -34,7 +34,7 @@ ros2 launch realsense2_camera rs_launch.py camera_namespace:=/ \
   align_depth.enable:=true enable_sync:=true
 ```
 
-雷达里程计
+## 雷达里程计
 
 ```bash
 ros2 launch jdbot_base_bringup start_ydlidar.launch.py
@@ -44,7 +44,7 @@ ros2 launch jdbot_base_bringup start_ydlidar.launch.py
 ros2 launch jdbot_slam cartographer_odom.launch.py
 ```
 
-orb3 (RGBD) 里程计
+## orb3 (RGBD) 里程计
 
 ```bash
 ros2 launch orbslam3_ros2 rgbd.launch.py \
@@ -80,13 +80,38 @@ ros2 launch orbslam3_ros2 rgbd.launch.py \
 ros2 run jdbot_slam tf_to_odom_node
 ```
 
-建图
+## rtabmap 里程计
+
+```bash
+ros2 launch jdbot_slam rtabmap_rgbd_odom.launch.py
+```
+
+测试用
+
+```bash
+ros2 launch jdbot_slam rtabmap_rgbd_odom.launch.py odom_topic:=/odom_rtabmap publish_tf:=false
+```
+
+ros2 run jdbot_base_bringup orbslam3_odom_to_tf \
+  --ros-args \
+  -p odom_topic:=/odom_rtabmap \
+  -p parent_frame:=odom \
+  -p child_frame:=base_footprint_rm
+
+
+## 建图
 
 ```bash
 ros2 launch jdbot_slam rtabmap_rgbd.launch.py
 ```
 
-导航
+与 rtabmap 里程计配合时
+
+```bash
+ros2 launch jdbot_slam rtabmap_rgbd.launch.py launch_point_cloud_xyz:=false
+```
+
+## 导航
 
 ```bash
 ros2 launch jdbot_navigation nav2_rtabmap.launch.py controller_type:=mpc # 默认rpp
