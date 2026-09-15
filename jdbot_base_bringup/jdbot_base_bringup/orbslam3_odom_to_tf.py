@@ -7,6 +7,7 @@ from geometry_msgs.msg import TransformStamped
 from nav_msgs.msg import Odometry
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
+from rclpy.qos import QoSProfile, ReliabilityPolicy
 from tf2_ros import TransformBroadcaster
 
 
@@ -25,11 +26,15 @@ class OdomToTF(Node):
         self.child_frame = self.get_parameter('child_frame').value
 
         self.tf_broadcaster = TransformBroadcaster(self)
+        odom_qos = QoSProfile(
+            depth=10,
+            reliability=ReliabilityPolicy.BEST_EFFORT,
+        )
         self.odom_subscription = self.create_subscription(
             Odometry,
             odom_topic,
             self.odom_callback,
-            10,
+            odom_qos,
         )
 
         self.get_logger().info(
