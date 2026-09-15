@@ -1,9 +1,9 @@
 """Publish ICP odometry from an RGB-D camera's depth stream.
 
 The depth stream is converted to a point cloud, then ``icp_odometry``
-publishes ``/odom`` and the ``odom -> base_footprint`` transform.  This
-launch file intentionally does not start SLAM, localization, visualization,
-or obstacle-detection nodes.
+publishes ``/odom`` and can publish the ``odom -> base_footprint`` transform.
+This launch file intentionally does not start SLAM, localization,
+visualization, or obstacle-detection nodes.
 """
 
 from launch import LaunchDescription
@@ -26,6 +26,7 @@ def generate_launch_description():
     sync_queue_size = LaunchConfiguration('sync_queue_size')
     qos = LaunchConfiguration('qos')
     odom_reset_countdown = LaunchConfiguration('odom_reset_countdown')
+    publish_tf = LaunchConfiguration('publish_tf')
 
     icp_odometry = Node(
         package='rtabmap_odom',
@@ -36,23 +37,23 @@ def generate_launch_description():
             'frame_id': base_frame_id,
             'odom_frame_id': odom_frame_id,
             'use_sim_time': use_sim_time,
-            'publish_tf': True,
+            'publish_tf': ParameterValue(publish_tf, value_type=bool),
             'topic_queue_size': topic_queue_size,
             'sync_queue_size': sync_queue_size,
             'qos': qos,
-            'wait_for_transform': 0.2,
-            'scan_voxel_size': 0.05,
-            'scan_normal_k': 5,
-            'Reg/Force3DoF': 'true',
-            'Odom/Strategy': '0',  # Frame-to-Map (F2M)
+            'wait_for_transform': 0.2,  # 等待传感器到基座 TF 的最长时间，单位秒
+            'scan_voxel_size': 0.05,  # 输入点云的体素降采样边长，单位米
+            'scan_normal_k': 5,  # 用每个点的 5 个近邻估计表面法线
+            'Reg/Force3DoF': 'true',  # 仅估计平面运动 x、y 和 yaw
+            'Odom/Strategy': '0',  # 使用帧到局部地图（Frame-to-Map）里程计
             'Odom/ResetCountdown': ParameterValue(
-                odom_reset_countdown, value_type=str),
-            'Odom/ScanKeyFrameThr': '0.6',
-            'Icp/PointToPlane': 'true',
-            'Icp/PointToPlaneK': '0',
-            'Icp/VoxelSize': '0',
-            'Icp/MaxCorrespondenceDistance': '0.1',
-            'Icp/CorrespondenceRatio': '0.1',
+                odom_reset_countdown, value_type=str),  # 连续失败指定帧数后重置
+            'Odom/ScanKeyFrameThr': '0.6',  # ICP 内点率低于 60% 时创建关键帧
+            'Icp/PointToPlane': 'true',  # 使用点到平面误差进行 ICP 配准
+            'Icp/PointToPlaneK': '0',  # 点云已在上游计算法线，不在 ICP 内重复计算
+            'Icp/VoxelSize': '0',  # 关闭 ICP 内部体素滤波，避免重复降采样
+            'Icp/MaxCorrespondenceDistance': '0.1',  # 对应点最大距离为 0.1 米
+            'Icp/CorrespondenceRatio': '0.1',  # 接受变换所需的最小对应点比例
         }],
         remappings=[
             # The real robot also publishes /scan. Keep ICP odometry bound
@@ -98,6 +99,11 @@ def generate_launch_description():
             'odom_topic',
             default_value='/odom',
             description='Odometry topic published by icp_odometry.'),
+        DeclareLaunchArgument(
+            'publish_tf',
+            default_value='true',
+            choices=['true', 'false'],
+            description='Publish the odom_frame_id -> base_frame_id TF.'),
         DeclareLaunchArgument(
             'depth_topic',
             default_value='/camera/depth/image_rect_raw',
