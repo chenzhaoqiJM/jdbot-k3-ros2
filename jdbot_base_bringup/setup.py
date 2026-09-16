@@ -26,6 +26,8 @@ setup(
             'ros2_ctrl_odom_node = jdbot_base_bringup.ros2_ctrl_odom_node:main',
             'orbslam3_odom_to_tf = '
             'jdbot_base_bringup.orbslam3_odom_to_tf:main',
+            'teleop_twist_keyboard_bias = '
+            'jdbot_base_bringup.teleop_twist_keyboard_bias:main',
         ],
     },
 )
