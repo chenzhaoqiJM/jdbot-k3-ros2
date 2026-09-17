@@ -99,7 +99,7 @@ colcon build --cmake-clean-cache --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE
 ```bash
 source /opt/ros/humble/setup.bash
 cd ~/jdbot_ws
-colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release --packages-skip orbslam3_ros2
+colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release --packages-skip orbslam3_ros2 orbslam3_slam_ros2
 ```
 
 
@@ -134,6 +134,26 @@ ros2 launch jdbot_slam cartographer_odom.launch.py
 
 ```bash
 ros2 run teleop_twist_keyboard teleop_twist_keyboard
+```
+
+### 雷达
+
+默认箭头标注方向为x正向，tf 的旋转全 0
+
+```bash
+ros2 launch jdbot_base_bringup start_lslidar_n10p.launch.py
+```
+
+ydlidar x3 pro，该配置为电机在后
+
+```bash
+ros2 launch jdbot_base_bringup start_ydlidar.launch.py
+```
+
+使箭头标注方向为x正向，tf 的旋转全 0
+
+```bash
+ros2 launch jdbot_base_bringup start_rplidar.launch.py serial_port:=/dev/ttyUSB1 flip_x_axis:=true
 ```
 
 ## 2d 激光建图
