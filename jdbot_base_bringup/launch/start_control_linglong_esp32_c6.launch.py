@@ -234,6 +234,14 @@ def generate_launch_description():
                    'base_link', 'laser_link'],
     )
 
+    tf2_node_rplidar_link = Node(
+            package='tf2_ros',
+            executable='static_transform_publisher',
+            name='tf_pub_base_to_rplidar_link',
+            arguments=['-0.035', '0.0', '0.30', '0.0', '0.0', '0.0',
+                       'base_link', 'rplidar_link'],
+        )
+
     tf2_node_imu = Node(
         package='tf2_ros',
         executable='static_transform_publisher',
@@ -324,5 +332,6 @@ def generate_launch_description():
         tf2_node_laser,
         tf2_node_imu,
         tf2_node_rgbd,
+        tf2_node_rplidar_link,
         drive_node,
     ])
