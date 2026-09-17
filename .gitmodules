@@ -8,3 +8,7 @@
 	path = sensors/lsm10p/Lslidar_ROS2_driver
 	url = https://github.com/Lslidar/Lslidar_ROS2_driver.git
 	branch = LS-S1_V1.0
+[submodule "sensors/rplidar_ros"]
+	path = sensors/rplidar_ros
+	url = https://github.com/Slamtec/rplidar_ros.git
+	branch = ros2
