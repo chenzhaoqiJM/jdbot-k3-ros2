@@ -31,8 +31,8 @@ target_link_libraries(orbslam3_rgbd_node
   ${OpenCV_LIBS}
   ${Pangolin_LIBRARIES})
 set_target_properties(orbslam3_rgbd_node PROPERTIES
-  SKIP_BUILD_RPATH TRUE
-  INSTALL_RPATH ""
+  BUILD_RPATH "/opt/orbslam3/lib;/opt/opencv-spacemit/lib"
+  INSTALL_RPATH "/opt/orbslam3/lib;/opt/opencv-spacemit/lib"
   INSTALL_RPATH_USE_LINK_PATH FALSE)
 
 install(TARGETS orbslam3_rgbd_node DESTINATION lib/${PROJECT_NAME})

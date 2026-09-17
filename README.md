@@ -4,7 +4,7 @@
 sudo apt install python3-zmq python3-serial python3-transforms3d \
 libspdlog-dev libconsole-bridge-dev liborocos-kdl-dev nlohmann-json3-dev liblgpio-dev \
 liblttng-ust-dev libgpiod-dev ros-humble-camera-info-manager ros-humble-slam-toolbox \
-ros-humble-cartographer ros-humble-cartographer-ros ros-humble-nav2* 'ros-humble-rtabmap*' ros-humble-aruco-markers-msgs
+ros-humble-cartographer ros-humble-cartographer-ros ros-humble-nav2* 'ros-humble-rtabmap*' ros-humble-aruco-markers-msgs ros-humble-realsense2-camera
 ```
 
 
@@ -46,19 +46,22 @@ echo /opt/orbslam3/lib | sudo tee /etc/ld.so.conf.d/orbslam3.conf
 sudo ldconfig
 ```
 
+两个 ORB 节点的可执行文件会写入 `/opt/orbslam3/lib` 和
+`/opt/opencv-spacemit/lib` 的 RPATH；仍需运行
+`ldconfig`，以便预编译动态库的间接依赖也能被系统加载器找到。
+
 编译
 
 ```bash
-export RVV_C_FLAGS="-O3 -DNDEBUG -march=rv64gcv_zvl256b -mrvv-vector-bits=zvl"
-export RVV_CXX_FLAGS="$RVV_C_FLAGS -DEIGEN_RISCV64_USE_RVV10"
-export OPENCV_PREFIX=/opt/opencv-spacemit
-export OPENCV_DIR="$OPENCV_PREFIX/lib/cmake/opencv4"
-
 source /opt/ros/humble/setup.bash
 cd ~/jdbot_ws
-export CMAKE_PREFIX_PATH="/opt/orbslam3:/opt/opencv-spacemit:$CMAKE_PREFIX_PATH"
-colcon build --cmake-clean-cache \
-  --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_FLAGS_RELEASE="$RVV_C_FLAGS" -DCMAKE_CXX_FLAGS_RELEASE="$RVV_CXX_FLAGS" -DOpenCV_DIR="$OPENCV_DIR"
+RVV_FLAGS="-O3 -DNDEBUG -march=rv64gcv_zvl256b -mrvv-vector-bits=zvl"
+CMAKE_PREFIX_PATH="/opt/orbslam3:/opt/opencv-spacemit:$CMAKE_PREFIX_PATH" \
+  colcon build --cmake-clean-cache --cmake-args \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_C_FLAGS_RELEASE="$RVV_FLAGS" \
+    -DCMAKE_CXX_FLAGS_RELEASE="$RVV_FLAGS -DEIGEN_RISCV64_USE_RVV10" \
+    -DOpenCV_DIR=/opt/opencv-spacemit/lib/cmake/opencv4
 ```
 
 ### 非 RVV
@@ -251,4 +254,3 @@ ros2 launch jdbot_navigation nav2_rtabmap.launch.py controller_type:=mpc # 默�
 ### rtabmap icp 里程计
 
 雷达、相机、底盘同上
-
