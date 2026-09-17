@@ -53,10 +53,19 @@ def generate_launch_description():
     # realsense 左侧红外为camera_link
     # D455 左侧第一个相机为红外（从后往前看）
 
+    tf2_node_rplidar_link = Node(
+            package='tf2_ros',
+            executable='static_transform_publisher',
+            name='tf_pub_base_to_rplidar_link',
+            arguments=['-0.035', '0.0', '1.56', '0.0', '0.0', '0.0',
+                       'base_link', 'rplidar_link'],
+        )
+
     return LaunchDescription([
         tf2_node_base,
         tf2_node_3d_laser,
         tf2_node_laser,
         tf2_node_imu,
         tf2_node_rgbd,
+        tf2_node_rplidar_link,
     ])

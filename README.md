@@ -153,7 +153,7 @@ ros2 launch jdbot_base_bringup start_ydlidar.launch.py
 使箭头标注方向为x正向，tf 的旋转全 0
 
 ```bash
-ros2 launch jdbot_base_bringup start_rplidar.launch.py serial_port:=/dev/ttyUSB1 flip_x_axis:=true frame_id:=rplidar_link
+ros2 launch jdbot_base_bringup start_rplidar.launch.py serial_port:=/dev/ttyUSB0 flip_x_axis:=true frame_id:=rplidar_link
 ```
 
 ## 2d 激光建图
