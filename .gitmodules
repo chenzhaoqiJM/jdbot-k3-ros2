@@ -4,3 +4,7 @@
 [submodule "core_pkgs/tf_transformations"]
 	path = core_pkgs/tf_transformations
 	url = https://github.com/DLu/tf_transformations.git
+[submodule "sensors/lsm10p/Lslidar_ROS2_driver"]
+	path = sensors/lsm10p/Lslidar_ROS2_driver
+	url = https://github.com/Lslidar/Lslidar_ROS2_driver.git
+	branch = LS-S1_V1.0
