@@ -1,6 +1,6 @@
 ## 安装依赖
 
-```
+```bash
 sudo apt install python3-zmq python3-serial python3-transforms3d \
 libspdlog-dev libconsole-bridge-dev liborocos-kdl-dev nlohmann-json3-dev liblgpio-dev \
 liblttng-ust-dev libgpiod-dev ros-humble-camera-info-manager ros-humble-slam-toolbox \
@@ -10,7 +10,7 @@ ros-humble-cartographer ros-humble-cartographer-ros ros-humble-nav2* 'ros-humble
 
 ## 安装 YDLIDAR SDK
 
-```
+```bash
 git clone https://github.com/chenzhaoqiJM/YDLidar-SDK.git
 cd YDLidar-SDK
 mkdir build && cd build
@@ -19,17 +19,11 @@ cmake --build . -- -j8
 sudo cmake --install .
 ```
 
+## 其他模块
 
-## 镭神激光雷达SDK参考
-https://github.com/Lslidar/Lslidar_ROS2_driver
-
-对于 M10P
-
+```bash
+git submodule update --init --recursive
 ```
-git clone -b M10/M10-PHY_V1.0 https://github.com/Lslidar/Lslidar_ROS2_driver.git
-```
-
-修改参数文件以使用
 
 ## 编译说明
 
