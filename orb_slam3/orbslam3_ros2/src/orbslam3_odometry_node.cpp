@@ -19,12 +19,12 @@
 #include <std_msgs/msg/u_int8.hpp>
 #include <tf2_ros/transform_broadcaster.h>
 
-class OrbSlam3RgbdNode final : public rclcpp::Node {
+class OrbSlam3OdometryNode final : public rclcpp::Node {
  public:
   using Image = sensor_msgs::msg::Image;
   using SyncPolicy = message_filters::sync_policies::ApproximateTime<Image, Image>;
 
-  OrbSlam3RgbdNode() : Node("orbslam3_rgbd") {
+  OrbSlam3OdometryNode() : Node("orbslam3_odometry") {
     const auto vocabulary = declare_parameter<std::string>("vocabulary");
     const auto settings = declare_parameter<std::string>("settings");
     publish_tf_ = declare_parameter<bool>("publish_tf", false);
@@ -54,7 +54,7 @@ class OrbSlam3RgbdNode final : public rclcpp::Node {
     sync_ = std::make_shared<message_filters::Synchronizer<SyncPolicy>>(
         SyncPolicy(10), color_sub_, depth_sub_);
     sync_->setMaxIntervalDuration(rclcpp::Duration::from_seconds(0.04));
-    sync_->registerCallback(std::bind(&OrbSlam3RgbdNode::imageCallback, this,
+    sync_->registerCallback(std::bind(&OrbSlam3OdometryNode::imageCallback, this,
                                       std::placeholders::_1, std::placeholders::_2));
 
     // base_link -> camera_link from the Linglong launch file, followed by
@@ -84,7 +84,7 @@ class OrbSlam3RgbdNode final : public rclcpp::Node {
     }
   }
 
-  ~OrbSlam3RgbdNode() override {
+  ~OrbSlam3OdometryNode() override {
     if (slam_) slam_->Shutdown();
   }
 
@@ -179,7 +179,7 @@ class OrbSlam3RgbdNode final : public rclcpp::Node {
 
 int main(int argc, char **argv) {
   rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<OrbSlam3RgbdNode>());
+  rclcpp::spin(std::make_shared<OrbSlam3OdometryNode>());
   rclcpp::shutdown();
   return 0;
 }

@@ -9,7 +9,7 @@ from launch_ros.parameter_descriptions import ParameterValue
 
 
 def generate_launch_description():
-    package_share = get_package_share_directory('orbslam3_slam_ros2')
+    package_share = get_package_share_directory('orbslam3_ros2')
     dependency_prefix = os.environ.get('ORB_SLAM3_PREFIX', '/opt/orbslam3')
 
     arguments = [
@@ -52,7 +52,7 @@ def generate_launch_description():
     ]
 
     node = Node(
-        package='orbslam3_slam_ros2',
+        package='orbslam3_ros2',
         executable='orbslam3_slam_node',
         name='orbslam3_slam',
         output='screen',

@@ -6,6 +6,12 @@
 ros2 launch jdbot_base_bringup start_control_linglong_esp32_c6.launch.py publish_tf:=false odom_topic:=odom_base wheel_base:=0.270 wheel_diameter:=0.065 min_angular_speed:=0.4
 ```
 
+## 实机模拟
+
+```bash
+ros2 launch jdbot_base_bringup start_control_linglong_fact.launch.py
+```
+
 ## realsense 相机
 
 ```bash
@@ -47,13 +53,17 @@ ros2 launch jdbot_base_bringup start_ydlidar.launch.py
 ```
 
 ```bash
+ros2 launch jdbot_base_bringup start_rplidar.launch.py serial_port:=/dev/ttyUSB1 flip_x_axis:=true frame_id:=rplidar_link
+```
+
+```bash
 ros2 launch jdbot_slam cartographer_odom.launch.py
 ```
 
 ## orb3 (RGBD) 里程计
 
 ```bash
-ros2 launch orbslam3_ros2 rgbd.launch.py \
+ros2 launch orbslam3_ros2 rgbd_odometry.launch.py \
   publish_tf:=true \
   odom_frame:=odom \
   base_frame:=base_footprint \
@@ -69,7 +79,7 @@ ros2 run jdbot_slam tf_to_odom_node
 或者配套
 
 ```bash
-ros2 launch orbslam3_ros2 rgbd.launch.py \
+ros2 launch orbslam3_ros2 rgbd_odometry.launch.py \
     settings:=$(ros2 pkg prefix orbslam3_ros2)/share/orbslam3_ros2/config/d455_rgbd_1280x720_orb_640x360.yaml \
     resize_for_orb:=true \
     tracking_width:=640 \

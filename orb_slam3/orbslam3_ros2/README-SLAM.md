@@ -1,6 +1,7 @@
 # ORB-SLAM3 RGB-D 建图节点
 
-这是独立于 `orbslam3_ros2` 里程计包的新建图包，不修改或替代原节点。
+建图节点与里程计节点位于同一个 `orbslam3_ros2` 包中，两者仍是独立的
+可执行程序，按需启动其中一个。
 
 ## 输出接口
 
@@ -22,7 +23,7 @@ Nav2 需要障碍物代价地图，应继续使用 D455 深度点云或激光雷
 source /opt/ros/humble/setup.bash
 cd ~/jdbot_ws
 export CMAKE_PREFIX_PATH=/opt/orbslam3:${CMAKE_PREFIX_PATH}
-colcon build --packages-select orbslam3_slam_ros2 \
+colcon build --packages-select orbslam3_ros2 \
   --cmake-args -DCMAKE_BUILD_TYPE=Release
 source install/setup.bash
 ```
@@ -32,7 +33,7 @@ source install/setup.bash
 相机使用现有的 640×480@15 配置后运行：
 
 ```bash
-ros2 launch orbslam3_slam_ros2 rgbd_slam.launch.py
+ros2 launch orbslam3_ros2 rgbd_slam.launch.py
 ```
 
 ## 高分辨率导航图像、低分辨率视觉建图
@@ -41,13 +42,13 @@ D455 在当前 USB 2.1 链路下使用彩色 1280×720@10、深度 848×480@10�
 使用原始 1280×720 图像，ORB 节点内部缩放到 640×360：
 
 ```bash
-ros2 launch orbslam3_slam_ros2 rgbd_slam.launch.py \
-  settings:=$(ros2 pkg prefix orbslam3_slam_ros2)/share/orbslam3_slam_ros2/config/d455_rgbd_1280x720_slam.yaml \
+ros2 launch orbslam3_ros2 rgbd_slam.launch.py \
+  settings:=$(ros2 pkg prefix orbslam3_ros2)/share/orbslam3_ros2/config/d455_rgbd_1280x720_slam.yaml \
   resize_for_orb:=true tracking_width:=640 tracking_height:=360
 ```
 
 所有话题、坐标系、保存目录和缩放参数均可通过 launch 命令行覆盖，可用
-`ros2 launch orbslam3_slam_ros2 rgbd_slam.launch.py --show-args` 查看。
+`ros2 launch orbslam3_ros2 rgbd_slam.launch.py --show-args` 查看。
 
 ## 保存结果
 

@@ -62,8 +62,8 @@ def generate_launch_description():
             description='跟踪状态输出话题'),
         Node(
             package='orbslam3_ros2',
-            executable='orbslam3_rgbd_node',
-            name='orbslam3_rgbd',
+            executable='orbslam3_odometry_node',
+            name='orbslam3_odometry',
             output='screen',
             parameters=[{
                 'vocabulary': LaunchConfiguration('vocabulary'),

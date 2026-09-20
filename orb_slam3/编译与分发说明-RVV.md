@@ -240,14 +240,14 @@ grep -R -E '^(ORB_SLAM3_DIR|Pangolin_DIR|cv_bridge_DIR|OpenCV_DIR):' \
 运行时无需设置指向 home 目录的 `LD_LIBRARY_PATH`：
 
 ```bash
-ros2 launch orbslam3_ros2 rgbd.launch.py
+ros2 launch orbslam3_ros2 rgbd_odometry.launch.py
 ```
 
 默认词典来自 `${ORB_SLAM3_PREFIX:-/opt/orbslam3}/share/orbslam3/ORBvoc.txt`，
 相机参数通过 ROS 2 package share 动态定位。也可覆盖词典、配置和话题：
 
 ```bash
-ros2 launch orbslam3_ros2 rgbd.launch.py \
+ros2 launch orbslam3_ros2 rgbd_odometry.launch.py \
   vocabulary:=/another/location/ORBvoc.txt \
   settings:=/another/location/camera.yaml \
   color_topic:=/camera/camera/color/image_raw \

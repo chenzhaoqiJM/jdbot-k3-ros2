@@ -4,7 +4,8 @@
 sudo apt install python3-zmq python3-serial python3-transforms3d \
 libspdlog-dev libconsole-bridge-dev liborocos-kdl-dev nlohmann-json3-dev liblgpio-dev \
 liblttng-ust-dev libgpiod-dev ros-humble-camera-info-manager ros-humble-slam-toolbox \
-ros-humble-cartographer ros-humble-cartographer-ros ros-humble-nav2* 'ros-humble-rtabmap*' ros-humble-aruco-markers-msgs ros-humble-realsense2-camera
+ros-humble-cartographer ros-humble-cartographer-ros ros-humble-nav2* 'ros-humble-rtabmap*' ros-humble-aruco-markers-msgs ros-humble-realsense2-camera ros-dev-tools ros-humble-desktop \
+udev
 ```
 
 
@@ -36,7 +37,7 @@ sudo apt install git cmake ninja-build build-essential patchelf \
   libeigen3-dev opencv-spacemit=4.14.0-2bb4 \
   libboost-serialization-dev libssl-dev libsuitesparse-dev \
   libglew-dev libepoxy-dev libx11-dev libwayland-dev \
-  libjpeg-dev libpng-dev libtiff-dev
+  libjpeg-dev libpng-dev libtiff-dev wget
 ```
 
 ```bash
@@ -72,7 +73,7 @@ CMAKE_PREFIX_PATH="/opt/orbslam3:/opt/opencv-spacemit:$CMAKE_PREFIX_PATH" \
 sudo apt install -y git cmake ninja-build build-essential patchelf \
   libeigen3-dev libopencv-dev libboost-serialization-dev libssl-dev \
   libsuitesparse-dev libglew-dev libepoxy-dev \
-  libx11-dev libwayland-dev libjpeg-dev libpng-dev libtiff-dev
+  libx11-dev libwayland-dev libjpeg-dev libpng-dev libtiff-dev wget
 ```
 
 ```bash
@@ -96,7 +97,7 @@ colcon build --cmake-clean-cache --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE
 ```bash
 source /opt/ros/humble/setup.bash
 cd ~/jdbot_ws
-colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release --packages-skip orbslam3_ros2 orbslam3_slam_ros2
+colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release --packages-skip orbslam3_ros2
 ```
 
 

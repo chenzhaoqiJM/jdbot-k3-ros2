@@ -2,7 +2,7 @@
 <package format="3">
   <name>orbslam3_ros2</name>
   <version>0.1.0</version>
-  <description>Headless ORB-SLAM3 RGB-D odometry node for the JDBot D455.</description>
+  <description>ORB-SLAM3 RGB-D odometry and mapping nodes for the JDBot D455.</description>
   <maintainer email="bianbu@example.com">bianbu</maintainer>
   <license>GPL-3.0-only</license>
   <buildtool_depend>ament_cmake</buildtool_depend>
@@ -10,6 +10,7 @@
   <depend>sensor_msgs</depend>
   <depend>nav_msgs</depend>
   <depend>std_msgs</depend>
+  <depend>std_srvs</depend>
   <depend>geometry_msgs</depend>
   <depend>cv_bridge</depend>
   <depend>message_filters</depend>

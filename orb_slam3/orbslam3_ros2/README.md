@@ -2,7 +2,9 @@
 
 本包使用 Intel RealSense D455 运行无界面的 ORB-SLAM3 RGB-D 里程计，并在
 `/orbslam3/odom` 发布米制里程计，在 `/orbslam3/tracking_state` 发布跟踪状态。
-跟踪状态为 `2` 表示跟踪正常。
+跟踪状态为 `2` 表示跟踪正常。里程计可执行程序名为
+`orbslam3_odometry_node`；同一包还提供 `orbslam3_slam_node`，建图用法参见
+[`README-SLAM.md`](README-SLAM.md)。
 
 ## 运行方法
 
@@ -23,13 +25,13 @@ ros2 launch realsense2_camera rs_launch.py camera_namespace:=/ \
 ```bash
 source /opt/ros/humble/setup.bash
 source ~/orbslam3_ws/install/setup.bash
-ros2 launch orbslam3_ros2 rgbd.launch.py
+ros2 launch orbslam3_ros2 rgbd_odometry.launch.py
 ```
 
 所有节点参数均可在 launch 命令行中覆盖。例如启用 TF 并修改坐标系名称：
 
 ```bash
-ros2 launch orbslam3_ros2 rgbd.launch.py \
+ros2 launch orbslam3_ros2 rgbd_odometry.launch.py \
   publish_tf:=true \
   odom_frame:=odom \
   base_frame:=base_link \
@@ -42,7 +44,7 @@ ros2 launch orbslam3_ros2 rgbd.launch.py \
 查看全部可配置参数及其默认值：
 
 ```bash
-ros2 launch orbslam3_ros2 rgbd.launch.py --show-args
+ros2 launch orbslam3_ros2 rgbd_odometry.launch.py --show-args
 ```
 
 快速检查运行状态：
@@ -71,7 +73,7 @@ ros2 launch realsense2_camera rs_launch.py camera_namespace:=/ \
 ```bash
 source /opt/ros/humble/setup.bash
 source ~/jdbot_ws/install/setup.bash
-ros2 launch orbslam3_ros2 rgbd.launch.py \
+ros2 launch orbslam3_ros2 rgbd_odometry.launch.py \
   settings:=$(ros2 pkg prefix orbslam3_ros2)/share/orbslam3_ros2/config/d455_rgbd_1280x720_orb_640x360.yaml \
   resize_for_orb:=true \
   tracking_width:=640 \
