@@ -47,6 +47,24 @@ ros2 launch orbslam3_ros2 rgbd_odometry.launch.py \
 ros2 launch orbslam3_ros2 rgbd_odometry.launch.py --show-args
 ```
 
+## D415 640×480
+
+`d415_rgbd.yaml` 使用设备序列号 `036422061119` 在 640×480@15 下实际发布的
+彩色相机内参。D415 标定数据给出的红外双目基线为 0.0549711 m，深度单位为
+0.001 m。里程计启动命令为：
+
+```bash
+ros2 launch orbslam3_ros2 rgbd_odometry.launch.py \
+  settings:=$(ros2 pkg prefix orbslam3_ros2)/share/orbslam3_ros2/config/d415_rgbd.yaml
+```
+
+建图时使用对应的 `d415_rgbd_slam.yaml`：
+
+```bash
+ros2 launch orbslam3_ros2 rgbd_slam.launch.py \
+  settings:=$(ros2 pkg prefix orbslam3_ros2)/share/orbslam3_ros2/config/d415_rgbd_slam.yaml
+```
+
 快速检查运行状态：
 
 ```bash
