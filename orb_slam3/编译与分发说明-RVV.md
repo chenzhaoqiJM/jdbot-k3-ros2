@@ -219,16 +219,15 @@ sudo ldconfig
 ```bash
 source /opt/ros/humble/setup.bash
 cd ~/orbslam3_ws
-export CMAKE_PREFIX_PATH="/opt/orbslam3:/opt/opencv-spacemit:$CMAKE_PREFIX_PATH"
-
 colcon build --symlink-install --cmake-clean-cache \
-  --cmake-args \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_C_FLAGS_RELEASE="$RVV_C_FLAGS" \
-    -DCMAKE_CXX_FLAGS_RELEASE="$RVV_CXX_FLAGS" \
-    -DOpenCV_DIR="$OPENCV_DIR"
+  --cmake-args -DCMAKE_BUILD_TYPE=Release
 source install/setup.bash
 ```
+
+ROS 2 包默认启用 `ORB_SLAM3_USE_RVV`，并自动设置 RVV 编译选项以及
+`/opt/orbslam3`、`/opt/opencv-spacemit` 的 CMake 搜索路径。前文中的
+`RVV_C_FLAGS`、`RVV_CXX_FLAGS` 和 `OpenCV_DIR` 仍用于编译 Pangolin、
+ORB-SLAM3 与定制 `cv_bridge`。
 
 缓存中应分别指向 `/opt/orbslam3` 和 `/opt/opencv-spacemit`：
 

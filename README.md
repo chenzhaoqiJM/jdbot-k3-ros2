@@ -56,14 +56,13 @@ sudo ldconfig
 ```bash
 source /opt/ros/humble/setup.bash
 cd ~/jdbot_ws
-RVV_FLAGS="-O3 -DNDEBUG -march=rv64gcv_zvl256b -mrvv-vector-bits=zvl"
-CMAKE_PREFIX_PATH="/opt/orbslam3:/opt/opencv-spacemit:$CMAKE_PREFIX_PATH" \
-  colcon build --cmake-clean-cache --cmake-args \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_C_FLAGS_RELEASE="$RVV_FLAGS" \
-    -DCMAKE_CXX_FLAGS_RELEASE="$RVV_FLAGS -DEIGEN_RISCV64_USE_RVV10" \
-    -DOpenCV_DIR=/opt/opencv-spacemit/lib/cmake/opencv4
+colcon build --cmake-clean-cache \
+  --cmake-args -DCMAKE_BUILD_TYPE=Release
 ```
+
+`orbslam3_ros2` 默认启用 RVV，并自动使用 `/opt/orbslam3`、
+`/opt/opencv-spacemit` 和 OpenCV 4.14 的 CMake 配置，因此无需设置
+`RVV_FLAGS`、`CMAKE_PREFIX_PATH` 或 `OpenCV_DIR`。
 
 ### 非 RVV
 
@@ -88,8 +87,10 @@ sudo ldconfig
 ```bash
 source /opt/ros/humble/setup.bash
 cd ~/jdbot_ws
-export CMAKE_PREFIX_PATH=/opt/orbslam3:${CMAKE_PREFIX_PATH}
-colcon build --cmake-clean-cache --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+colcon build --cmake-clean-cache --cmake-args \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DORB_SLAM3_USE_RVV=OFF \
+  -DCMAKE_POLICY_VERSION_MINIMUM=3.5
 ```
 
 ### 跳过 orb slam 的编译

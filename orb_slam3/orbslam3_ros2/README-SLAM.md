@@ -22,7 +22,6 @@ Nav2 需要障碍物代价地图，应继续使用 D455 深度点云或激光雷
 ```bash
 source /opt/ros/humble/setup.bash
 cd ~/jdbot_ws
-export CMAKE_PREFIX_PATH=/opt/orbslam3:${CMAKE_PREFIX_PATH}
 colcon build --packages-select orbslam3_ros2 \
   --cmake-args -DCMAKE_BUILD_TYPE=Release
 source install/setup.bash
