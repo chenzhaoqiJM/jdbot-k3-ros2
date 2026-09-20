@@ -57,6 +57,10 @@ def generate_launch_description():
             default_value='/orbslam3/odom',
             description='里程计输出话题'),
         DeclareLaunchArgument(
+            'odom_2d_topic',
+            default_value='/orbslam3/odom_2d',
+            description='二维平面里程计输出话题'),
+        DeclareLaunchArgument(
             'tracking_state_topic',
             default_value='/orbslam3/tracking_state',
             description='跟踪状态输出话题'),
@@ -84,6 +88,7 @@ def generate_launch_description():
                 ('/camera/aligned_depth_to_color/image_raw',
                  LaunchConfiguration('depth_topic')),
                 ('odom', LaunchConfiguration('odom_topic')),
+                ('odom_2d', LaunchConfiguration('odom_2d_topic')),
                 ('tracking_state', LaunchConfiguration('tracking_state_topic')),
             ],
         )

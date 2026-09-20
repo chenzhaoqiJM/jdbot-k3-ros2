@@ -1,4 +1,5 @@
 #include <chrono>
+#include <cmath>
 #include <memory>
 #include <mutex>
 #include <stdexcept>
@@ -43,6 +44,7 @@ class OrbSlam3OdometryNode final : public rclcpp::Node {
         vocabulary, settings, ORB_SLAM3::System::RGBD, false);
 
     odom_pub_ = create_publisher<nav_msgs::msg::Odometry>("odom", 10);
+    odom_2d_pub_ = create_publisher<nav_msgs::msg::Odometry>("odom_2d", 10);
     state_pub_ = create_publisher<std_msgs::msg::UInt8>("tracking_state", 10);
     if (publish_tf_) {
       tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
@@ -142,6 +144,16 @@ class OrbSlam3OdometryNode final : public rclcpp::Node {
       odom.pose.pose.orientation.w = q.w();
       odom_pub_->publish(odom);
 
+      nav_msgs::msg::Odometry odom_2d = odom;
+      odom_2d.pose.pose.position.z = 0.0;
+      const float yaw = std::atan2(t_base0_base.linear()(1, 0),
+                                   t_base0_base.linear()(0, 0));
+      odom_2d.pose.pose.orientation.x = 0.0;
+      odom_2d.pose.pose.orientation.y = 0.0;
+      odom_2d.pose.pose.orientation.z = std::sin(yaw * 0.5f);
+      odom_2d.pose.pose.orientation.w = std::cos(yaw * 0.5f);
+      odom_2d_pub_->publish(odom_2d);
+
       if (tf_broadcaster_) {
         geometry_msgs::msg::TransformStamped tf;
         tf.header = odom.header;
@@ -163,6 +175,7 @@ class OrbSlam3OdometryNode final : public rclcpp::Node {
   message_filters::Subscriber<Image> depth_sub_;
   std::shared_ptr<message_filters::Synchronizer<SyncPolicy>> sync_;
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
+  rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_2d_pub_;
   rclcpp::Publisher<std_msgs::msg::UInt8>::SharedPtr state_pub_;
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
   std::mutex track_mutex_;

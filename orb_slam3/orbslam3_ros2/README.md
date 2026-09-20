@@ -6,6 +6,9 @@
 `orbslam3_odometry_node`；同一包还提供 `orbslam3_slam_node`，建图用法参见
 [`README-SLAM.md`](README-SLAM.md)。
 
+`/orbslam3/odom` 保留 ORB-SLAM3 的三维位姿；`/orbslam3/odom_2d` 保留
+`x`、`y` 和 yaw，并将 `z`、roll、pitch 归零，供二维导航使用。
+
 ## 运行方法
 
 使用经过实机验证、兼容 USB 2 的 640×480@15 配置启动 D455：
@@ -38,6 +41,7 @@ ros2 launch orbslam3_ros2 rgbd_odometry.launch.py \
   color_topic:=/camera/color/image_raw \
   depth_topic:=/camera/aligned_depth_to_color/image_raw \
   odom_topic:=/localization/orb_odom \
+  odom_2d_topic:=/localization/orb_odom_2d \
   tracking_state_topic:=/localization/orb_tracking_state
 ```
 
@@ -71,6 +75,7 @@ ros2 launch orbslam3_ros2 rgbd_slam.launch.py \
 ros2 topic echo /orbslam3/tracking_state --once
 ros2 topic hz /orbslam3/odom
 ros2 topic echo /orbslam3/odom --once
+ros2 topic echo /orbslam3/odom_2d --once
 ```
 
 ## 1280×720 导航图像与低分辨率 ORB 跟踪
