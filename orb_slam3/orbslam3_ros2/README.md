@@ -39,6 +39,7 @@ ros2 launch orbslam3_ros2 rgbd_odometry.launch.py \
   odom_frame:=odom \
   base_frame:=base_link \
   color_topic:=/camera/color/image_raw \
+  camera_info_topic:=/camera/color/camera_info \
   depth_topic:=/camera/aligned_depth_to_color/image_raw \
   odom_topic:=/localization/orb_odom \
   odom_2d_topic:=/localization/orb_odom_2d \
@@ -53,9 +54,12 @@ ros2 launch orbslam3_ros2 rgbd_odometry.launch.py --show-args
 
 ## D415 640×480
 
-`d415_rgbd.yaml` 使用设备序列号 `036422061119` 在 640×480@15 下实际发布的
-彩色相机内参。D415 标定数据给出的红外双目基线为 0.0549711 m，深度单位为
-0.001 m。里程计启动命令为：
+两个节点都会等待 `/camera/color/camera_info`，动态读取彩色相机内参、畸变和
+图像尺寸，并从 TF 读取 `base_frame` 到彩色相机光学坐标系的外参。YAML 文件
+只保留帧率、深度单位、RGB-D 阈值和 ORB 提取参数等 `CameraInfo` 不提供的配置。
+
+`d415_rgbd.yaml` 保留 D415 的红外双目基线 0.0549711 m 和 0.001 m 深度单位。
+里程计启动命令为：
 
 ```bash
 ros2 launch orbslam3_ros2 rgbd_odometry.launch.py \
@@ -103,9 +107,8 @@ ros2 launch orbslam3_ros2 rgbd_odometry.launch.py \
   tracking_height:=360
 ```
 
-不要将现有 640×480 内参直接用于 1280×720 图像。上述配置中的内参来自本机
-D455 的 1280×720 `camera_info`，并按 0.5 比例缩放到 640×360。缩放只发生在
-ORB 节点内部，不会改变导航模块收到的原始图像。
+节点会从 1280×720 `CameraInfo` 读取内参，并按照目标宽高分别缩放到
+640×360。缩放只发生在 ORB 节点内部，不会改变导航模块收到的原始图像。
 
 launch 文件中有意将 `publish_tf` 设置为 `false`，这样可以与 Cartographer
 里程计进行对比，同时避免多个节点为 `base_footprint` 发布不同的 TF 父节点。

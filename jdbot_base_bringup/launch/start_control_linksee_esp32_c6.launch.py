@@ -246,7 +246,7 @@ def generate_launch_description():
         package='tf2_ros',
         executable='static_transform_publisher',
         name='static_tf_pub_rgbd',
-        arguments=['0.065', '0.02', '0.295', '0.0', '0.0', '0.0',
+        arguments=['0.065', '0.02', '0.285', '0.0', '0.0', '0.0',
                    'base_link', 'camera_link'],
     )
     # realsense 左侧红外为camera_link

@@ -1,18 +1,7 @@
 %YAML:1.0
 File.version: "1.0"
 Camera.type: "PinHole"
-# D455 1280x720 彩色流实测内参按 0.5 缩放，供 640x360 跟踪图使用。
-Camera1.fx: 322.9791564941406
-Camera1.fy: 322.6629943847656
-Camera1.cx: 322.7429504394531
-Camera1.cy: 181.31069946289062
-Camera1.k1: -0.04821427911520004
-Camera1.k2: 0.05453864485025406
-Camera1.p1: -0.0011744860094040632
-Camera1.p2: 0.0014560963027179241
-Camera1.k3: -0.016337666660547256
-Camera.width: 640
-Camera.height: 360
+# Intrinsics are read from CameraInfo and scaled to tracking_width/height.
 Camera.fps: 10
 Camera.RGB: 1
 Stereo.ThDepth: 40.0
