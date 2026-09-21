@@ -4,10 +4,12 @@
 sudo apt install python3-zmq python3-serial python3-transforms3d \
 libspdlog-dev libconsole-bridge-dev liborocos-kdl-dev nlohmann-json3-dev liblgpio-dev \
 liblttng-ust-dev libgpiod-dev ros-humble-camera-info-manager ros-humble-slam-toolbox \
-ros-humble-cartographer ros-humble-cartographer-ros ros-humble-nav2* 'ros-humble-rtabmap*' ros-humble-aruco-markers-msgs ros-humble-realsense2-camera ros-dev-tools ros-humble-desktop \
-udev
+ros-humble-cartographer ros-humble-cartographer-ros ros-humble-nav2* 'ros-humble-rtabmap*' \
+ros-humble-aruco-markers-msgs ros-humble-realsense2-camera ros-dev-tools ros-humble-desktop \
+udev git cmake ninja-build build-essential patchelf libboost-serialization-dev libssl-dev libsuitesparse-dev \
+libglew-dev libepoxy-dev libx11-dev libwayland-dev libjpeg-dev libpng-dev libtiff-dev wget \
+libeigen3-dev opencv-spacemit=4.14.0-2bb4
 ```
-
 
 ## 安装 YDLIDAR SDK
 
@@ -31,14 +33,6 @@ git submodule update --init --recursive
 ### RVV
 
 环境准备
-
-```bash
-sudo apt install git cmake ninja-build build-essential patchelf \
-  libeigen3-dev opencv-spacemit=4.14.0-2bb4 \
-  libboost-serialization-dev libssl-dev libsuitesparse-dev \
-  libglew-dev libepoxy-dev libx11-dev libwayland-dev \
-  libjpeg-dev libpng-dev libtiff-dev wget
-```
 
 ```bash
 wget https://archive.spacemit.com/ros2/prebuilt_libs/bianbu26/opt/ext/orbslam3_rvv/4452a3c4ab75b1cde34e5505a36ec3f9edcdc4c4/orbslam3.tar.gz
@@ -68,13 +62,6 @@ colcon build --cmake-clean-cache --cmake-args -DCMAKE_BUILD_TYPE=Release
 环境准备
 
 ```bash
-sudo apt install -y git cmake ninja-build build-essential patchelf \
-  libeigen3-dev libopencv-dev libboost-serialization-dev libssl-dev \
-  libsuitesparse-dev libglew-dev libepoxy-dev \
-  libx11-dev libwayland-dev libjpeg-dev libpng-dev libtiff-dev wget
-```
-
-```bash
 wget https://archive.spacemit.com/ros2/prebuilt_libs/bianbu26/opt/ext/orbslam3/4452a3c4ab75b1cde34e5505a36ec3f9edcdc4c4/orbslam3.tar.gz
 sudo tar xzf orbslam3.tar.gz -C /opt
 echo /opt/orbslam3/lib | sudo tee /etc/ld.so.conf.d/orbslam3.conf
@@ -86,10 +73,7 @@ sudo ldconfig
 ```bash
 source /opt/ros/humble/setup.bash
 cd ~/jdbot_ws
-colcon build --cmake-clean-cache --cmake-args \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DORB_SLAM3_USE_RVV=OFF \
-  -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+colcon build --cmake-clean-cache --cmake-args -DCMAKE_BUILD_TYPE=Release -DORB_SLAM3_USE_RVV=OFF
 ```
 
 ### 跳过 orb slam 的编译
