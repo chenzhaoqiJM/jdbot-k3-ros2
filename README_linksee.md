@@ -8,6 +8,10 @@ ros2 launch jdbot_base_bringup start_control_linksee_esp32_c6.launch.py publish_
 
 ## 建图
 
+启动 realsense 相机
+
+启动底盘 -> 启动激光雷达（可选） -> 启动里程计（雷达或rgbd）
+
 ```bash
 ros2 launch jdbot_slam rtabmap_rgbd.launch.py
 ```

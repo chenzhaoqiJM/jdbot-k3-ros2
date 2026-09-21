@@ -20,12 +20,17 @@ from launch.actions import DeclareLaunchArgument, SetEnvironmentVariable
 from launch.substitutions import LaunchConfiguration
 from launch.conditions import IfCondition, UnlessCondition
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 
 def generate_launch_description():
 
     use_sim_time = LaunchConfiguration('use_sim_time')
     localization = LaunchConfiguration('localization')
     launch_point_cloud_xyz = LaunchConfiguration('launch_point_cloud_xyz')
+    min_depth = LaunchConfiguration('min_depth')
+    max_depth = LaunchConfiguration('max_depth')
+    grid_range_min = LaunchConfiguration('grid_range_min')
+    grid_range_max = LaunchConfiguration('grid_range_max')
 
     parameters={
           'frame_id':'base_footprint',
@@ -35,7 +40,8 @@ def generate_launch_description():
           'Reg/Force3DoF':'true',
           'Grid/RayTracing':'true', # Fill empty space
           'Grid/3D':'false', # Use 2D occupancy
-          'Grid/RangeMax':'3',
+          'Grid/RangeMin':ParameterValue(grid_range_min, value_type=str),
+          'Grid/RangeMax':ParameterValue(grid_range_max, value_type=str),
           'Grid/NormalsSegmentation':'false', # Use passthrough filter to detect obstacles
           'Grid/MaxGroundHeight':'0.05', # All points above 5 cm are obstacles
           'Grid/MaxObstacleHeight':'0.4',  # All points over 1 meter are ignored
@@ -63,6 +69,30 @@ def generate_launch_description():
             description=(
                 'Launch point_cloud_xyz. Set to false when another launch '
                 'file already publishes /camera/cloud.')),
+
+        DeclareLaunchArgument(
+            'min_depth', default_value='0.1',
+            description=(
+                'Minimum depth converted to /camera/cloud, in meters. '
+                'Zero disables the minimum-depth filter.')),
+
+        DeclareLaunchArgument(
+            'max_depth', default_value='4.0',
+            description=(
+                'Maximum depth converted to /camera/cloud, in meters. '
+                'Zero disables the maximum-depth filter.')),
+
+        DeclareLaunchArgument(
+            'grid_range_min', default_value='0.1',
+            description=(
+                'Minimum point-cloud range used by RTAB-Map occupancy-grid '
+                'and obstacle processing, in meters.')),
+
+        DeclareLaunchArgument(
+            'grid_range_max', default_value='4.0',
+            description=(
+                'Maximum point-cloud range used by RTAB-Map occupancy-grid '
+                'and obstacle processing, in meters.')),
 
         # Nodes to launch
 
@@ -95,7 +125,10 @@ def generate_launch_description():
             condition=IfCondition(launch_point_cloud_xyz),
             package='rtabmap_util', executable='point_cloud_xyz', output='screen',
             parameters=[{'decimation': 2,
-                         'max_depth': 3.0,
+                         'min_depth': ParameterValue(
+                             min_depth, value_type=float),
+                         'max_depth': ParameterValue(
+                             max_depth, value_type=float),
                          'voxel_size': 0.02}],
             remappings=[('depth/image', '/camera/depth/image_rect_raw'),
                         ('depth/camera_info', '/camera/depth/camera_info'),
