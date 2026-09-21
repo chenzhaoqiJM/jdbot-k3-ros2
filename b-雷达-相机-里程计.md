@@ -145,4 +145,10 @@ ros2 run jdbot_base_bringup orbslam3_odom_to_tf --ros-args -p odom_topic:=/odom_
 ros2 launch cuvslam_rgbd cuvslam_rgbd.launch.py
 ```
 
+直接用于导航或者建图，深度相机侧帧率建议30FPS
+
+```bash
+ros2 launch cuvslam_rgbd cuvslam_rgbd.launch.py output_odom_topic:=/odom publish_tf:=true odom_frame:=odom
+```
+
 更多信息见：cuvslam/cuvslam_rgbd/README.md
