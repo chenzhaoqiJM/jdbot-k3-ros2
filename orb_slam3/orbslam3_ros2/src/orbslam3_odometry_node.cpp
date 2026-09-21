@@ -40,7 +40,7 @@ class OrbSlam3OdometryNode final : public rclcpp::Node {
     base_frame_ = declare_parameter<std::string>("base_frame", "base_footprint");
     resize_for_orb_ = declare_parameter<bool>("resize_for_orb", false);
     tracking_width_ = declare_parameter<int>("tracking_width", 640);
-    tracking_height_ = declare_parameter<int>("tracking_height", 360);
+    tracking_height_ = declare_parameter<int>("tracking_height", 480);
 
     if (resize_for_orb_ && (tracking_width_ <= 0 || tracking_height_ <= 0)) {
       throw std::invalid_argument(

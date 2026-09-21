@@ -42,7 +42,7 @@ def generate_launch_description():
             description='ORB-SLAM3 实际处理的图像宽度'),
         DeclareLaunchArgument(
             'tracking_height',
-            default_value='360',
+            default_value='480',
             description='ORB-SLAM3 实际处理的图像高度'),
         DeclareLaunchArgument(
             'color_topic',
