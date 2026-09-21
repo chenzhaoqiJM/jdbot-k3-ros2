@@ -1,0 +1,8 @@
+Cartographer LiDAR Odometry
+
+This package uses declarations and local_trajectory_builder_2d.cc derived from
+Cartographer 2.0.9004.
+Cartographer is Copyright 2016 The Cartographer Authors and is licensed under
+the Apache License, Version 2.0.
+
+The vendored declarations are located under vendor/cartographer_2.0.9004/.

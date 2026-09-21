@@ -56,8 +56,7 @@ sudo ldconfig
 ```bash
 source /opt/ros/humble/setup.bash
 cd ~/jdbot_ws
-colcon build --cmake-clean-cache \
-  --cmake-args -DCMAKE_BUILD_TYPE=Release
+colcon build --cmake-clean-cache --cmake-args -DCMAKE_BUILD_TYPE=Release
 ```
 
 `orbslam3_ros2` 默认启用 RVV，并自动使用 `/opt/orbslam3`、
