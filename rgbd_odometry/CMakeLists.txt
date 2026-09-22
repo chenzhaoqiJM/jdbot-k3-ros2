@@ -17,14 +17,17 @@ find_package(tf2_ros REQUIRED)
 find_package(tf2_eigen REQUIRED)
 find_package(eigen3_cmake_module REQUIRED)
 find_package(Eigen3 REQUIRED)
+find_package(OpenCV REQUIRED COMPONENTS core features2d)
 
 add_library(rgbd_odometry_core
   src/image.cpp
+  src/sparse_tracker.cpp
   src/engine.cpp)
 target_include_directories(rgbd_odometry_core PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
-target_link_libraries(rgbd_odometry_core Eigen3::Eigen)
+target_link_libraries(rgbd_odometry_core Eigen3::Eigen ${OpenCV_LIBS})
+target_include_directories(rgbd_odometry_core SYSTEM PUBLIC ${OpenCV_INCLUDE_DIRS})
 ament_target_dependencies(rgbd_odometry_core sensor_msgs)
 
 add_executable(rgbd_odometry_node src/node.cpp)
@@ -49,6 +52,8 @@ if(BUILD_TESTING)
   ament_target_dependencies(test_image sensor_msgs)
   ament_add_gtest(test_engine test/test_engine.cpp)
   target_link_libraries(test_engine rgbd_odometry_core Eigen3::Eigen)
+  ament_add_gtest(test_sparse_tracker test/test_sparse_tracker.cpp)
+  target_link_libraries(test_sparse_tracker rgbd_odometry_core Eigen3::Eigen)
 endif()
 
 ament_export_include_directories(include)

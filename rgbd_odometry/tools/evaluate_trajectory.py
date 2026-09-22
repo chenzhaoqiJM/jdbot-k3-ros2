@@ -120,7 +120,9 @@ def evaluate(pairs):
     return {
         "ATE_RMSE_m": rmse(position_errors),
         "ATE_max_m": max(position_errors),
+        "endpoint_error_m": position_errors[-1],
         "yaw_RMSE_deg": math.degrees(rmse(yaw_errors)),
+        "endpoint_yaw_error_deg": math.degrees(yaw_errors[-1]),
         "translation_RPE_RMSE_m": rmse(translation_rpe),
         "rotation_RPE_RMSE_deg": math.degrees(rmse(rotation_rpe)),
         "path_length_ratio": estimate_length / reference_length if reference_length else float("nan"),

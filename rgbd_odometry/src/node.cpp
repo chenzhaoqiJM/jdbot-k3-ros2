@@ -93,7 +93,7 @@ class RgbdOdometryNode final : public rclcpp::Node {
     declare_parameter<std::string>("odom_frame", "rgbd_odom");
     declare_parameter<double>("depth_scale_factor", 1000.0);
     declare_parameter<double>("min_depth_m", 0.2);
-    declare_parameter<double>("max_depth_m", 8.0);
+    declare_parameter<double>("max_depth_m", 4.5);
     declare_parameter<double>("sync_slop_s", 0.015);
     declare_parameter<int>("sync_queue_size", 30);
     declare_parameter<int>("qos_depth", 40);
@@ -108,10 +108,13 @@ class RgbdOdometryNode final : public rclcpp::Node {
     declare_parameter<double>("max_correspondence_m", 0.08);
     declare_parameter<int>("depth_filter_radius", 1);
     declare_parameter<double>("depth_filter_max_difference_m", 0.05);
-    declare_parameter<int>("min_correspondences", 180);
+    declare_parameter<int>("coarse_min_correspondences", 40);
+    declare_parameter<int>("fine_min_correspondences", 180);
     declare_parameter<double>("color_static_threshold", 8.0);
     declare_parameter<int>("static_keyframe_max_frames", 60);
     declare_parameter<double>("photometric_weight", 0.1);
+    declare_parameter<double>("photometric_max_weight", 0.18);
+    declare_parameter<double>("photometric_adaptive_threshold", 0.1);
     declare_parameter<bool>("photometric_affine_compensation", false);
     declare_parameter<double>("local_keyframe_fusion_weight", 0.0);
     declare_parameter<int>("local_keyframe_max_frames", 12);
@@ -119,6 +122,26 @@ class RgbdOdometryNode final : public rclcpp::Node {
     declare_parameter<double>("local_keyframe_max_rotation_rad", 0.15);
     declare_parameter<double>("local_keyframe_consistency_translation_m", 0.06);
     declare_parameter<double>("local_keyframe_consistency_rotation_rad", 0.08);
+    declare_parameter<double>("sparse_fusion_weight", 0.20);
+    declare_parameter<double>("sparse_translation_fusion_weight", 0.20);
+    declare_parameter<double>("sparse_max_translation_disagreement_m", 0.06);
+    declare_parameter<double>("sparse_max_rotation_disagreement_rad", 0.08);
+    declare_parameter<int>("window_max_keyframes", 3);
+    declare_parameter<int>("window_evaluation_interval", 3);
+    declare_parameter<double>("window_max_translation_m", 0.45);
+    declare_parameter<double>("window_max_rotation_rad", 0.45);
+    declare_parameter<double>("window_fusion_weight", 0.12);
+    declare_parameter<int>("map_max_keyframes", 20);
+    declare_parameter<int>("map_query_interval", 30);
+    declare_parameter<int>("map_min_keyframe_age", 30);
+    declare_parameter<int>("map_min_inliers", 8);
+    declare_parameter<double>("map_keyframe_translation_m", 0.20);
+    declare_parameter<double>("map_keyframe_rotation_rad", 0.20);
+    declare_parameter<double>("map_query_translation_m", 0.80);
+    declare_parameter<double>("map_query_rotation_rad", 0.65);
+    declare_parameter<double>("map_max_correction_translation_m", 0.80);
+    declare_parameter<double>("map_max_correction_rotation_rad", 0.40);
+    declare_parameter<double>("map_fusion_weight", 0.50);
     declare_parameter<double>("planar_translation_deadband_m", 0.0015);
   }
 
@@ -149,10 +172,17 @@ class RgbdOdometryNode final : public rclcpp::Node {
     config.depth_filter_radius = get_parameter("depth_filter_radius").as_int();
     config.depth_filter_max_difference_m =
         get_parameter("depth_filter_max_difference_m").as_double();
-    config.min_correspondences = get_parameter("min_correspondences").as_int();
+    config.coarse_min_correspondences =
+        get_parameter("coarse_min_correspondences").as_int();
+    config.fine_min_correspondences =
+        get_parameter("fine_min_correspondences").as_int();
     config.color_static_threshold = get_parameter("color_static_threshold").as_double();
     config.static_keyframe_max_frames = get_parameter("static_keyframe_max_frames").as_int();
     config.photometric_weight = get_parameter("photometric_weight").as_double();
+    config.photometric_max_weight =
+        get_parameter("photometric_max_weight").as_double();
+    config.photometric_adaptive_threshold =
+        get_parameter("photometric_adaptive_threshold").as_double();
     config.photometric_affine_compensation =
         get_parameter("photometric_affine_compensation").as_bool();
     config.local_keyframe_fusion_weight =
@@ -166,6 +196,41 @@ class RgbdOdometryNode final : public rclcpp::Node {
         get_parameter("local_keyframe_consistency_translation_m").as_double();
     config.local_keyframe_consistency_rotation_rad =
         get_parameter("local_keyframe_consistency_rotation_rad").as_double();
+    config.sparse_fusion_weight =
+        get_parameter("sparse_fusion_weight").as_double();
+    config.sparse_translation_fusion_weight =
+        get_parameter("sparse_translation_fusion_weight").as_double();
+    config.sparse_max_translation_disagreement_m =
+        get_parameter("sparse_max_translation_disagreement_m").as_double();
+    config.sparse_max_rotation_disagreement_rad =
+        get_parameter("sparse_max_rotation_disagreement_rad").as_double();
+    config.window_max_keyframes =
+        get_parameter("window_max_keyframes").as_int();
+    config.window_evaluation_interval =
+        get_parameter("window_evaluation_interval").as_int();
+    config.window_max_translation_m =
+        get_parameter("window_max_translation_m").as_double();
+    config.window_max_rotation_rad =
+        get_parameter("window_max_rotation_rad").as_double();
+    config.window_fusion_weight =
+        get_parameter("window_fusion_weight").as_double();
+    config.map_max_keyframes = get_parameter("map_max_keyframes").as_int();
+    config.map_query_interval = get_parameter("map_query_interval").as_int();
+    config.map_min_keyframe_age = get_parameter("map_min_keyframe_age").as_int();
+    config.map_min_inliers = get_parameter("map_min_inliers").as_int();
+    config.map_keyframe_translation_m =
+        get_parameter("map_keyframe_translation_m").as_double();
+    config.map_keyframe_rotation_rad =
+        get_parameter("map_keyframe_rotation_rad").as_double();
+    config.map_query_translation_m =
+        get_parameter("map_query_translation_m").as_double();
+    config.map_query_rotation_rad =
+        get_parameter("map_query_rotation_rad").as_double();
+    config.map_max_correction_translation_m =
+        get_parameter("map_max_correction_translation_m").as_double();
+    config.map_max_correction_rotation_rad =
+        get_parameter("map_max_correction_rotation_rad").as_double();
+    config.map_fusion_weight = get_parameter("map_fusion_weight").as_double();
     planar_translation_deadband_m_ =
         get_parameter("planar_translation_deadband_m").as_double();
     engine_ = Engine(config);
@@ -185,7 +250,9 @@ class RgbdOdometryNode final : public rclcpp::Node {
         config.depth_filter_radius >= 0 && config.depth_filter_radius <= 2 &&
         config.depth_filter_max_difference_m >= 0.005F &&
         config.depth_filter_max_difference_m <= 0.2F &&
-        config.min_correspondences >= 20 && config.color_static_threshold >= 0.0F &&
+        config.coarse_min_correspondences >= 20 &&
+        config.fine_min_correspondences >= 20 &&
+        config.color_static_threshold >= 0.0F &&
         config.color_static_threshold <= 30.0F &&
         config.static_keyframe_max_frames >= 1 && config.static_keyframe_max_frames <= 1000 &&
         config.local_keyframe_max_frames >= 2 && config.local_keyframe_max_frames <= 60 &&
@@ -196,10 +263,50 @@ class RgbdOdometryNode final : public rclcpp::Node {
         config.local_keyframe_consistency_translation_m >= 0.005F &&
         config.local_keyframe_consistency_translation_m <= 0.5F &&
         config.local_keyframe_consistency_rotation_rad >= 0.005F &&
-        config.local_keyframe_consistency_rotation_rad <= 0.5F;
+        config.local_keyframe_consistency_rotation_rad <= 0.5F &&
+        config.sparse_max_translation_disagreement_m >= 0.005F &&
+        config.sparse_max_translation_disagreement_m <= 0.5F &&
+        config.sparse_max_rotation_disagreement_rad >= 0.005F &&
+        config.sparse_max_rotation_disagreement_rad <= 0.5F &&
+        config.window_max_keyframes >= 1 &&
+        config.window_max_keyframes <= 6 &&
+        config.window_evaluation_interval >= 1 &&
+        config.window_evaluation_interval <= 30 &&
+        config.window_max_translation_m >= 0.05F &&
+        config.window_max_translation_m <= 2.0F &&
+        config.window_max_rotation_rad >= 0.05F &&
+        config.window_max_rotation_rad <= 1.5F &&
+        config.map_max_keyframes >= 1 && config.map_max_keyframes <= 50 &&
+        config.map_query_interval >= 1 && config.map_query_interval <= 30 &&
+        config.map_min_keyframe_age >= 5 && config.map_min_keyframe_age <= 1000 &&
+        config.map_min_inliers >= 6 && config.map_min_inliers <= 180 &&
+        config.map_keyframe_translation_m >= 0.05F &&
+        config.map_keyframe_translation_m <= 1.0F &&
+        config.map_keyframe_rotation_rad >= 0.05F &&
+        config.map_keyframe_rotation_rad <= 1.0F &&
+        config.map_query_translation_m >= 0.1F &&
+        config.map_query_translation_m <= 2.0F &&
+        config.map_query_rotation_rad >= 0.1F &&
+        config.map_query_rotation_rad <= 1.5F &&
+        config.map_max_correction_translation_m >= 0.05F &&
+        config.map_max_correction_translation_m <= 1.0F &&
+        config.map_max_correction_rotation_rad >= 0.05F &&
+        config.map_max_correction_rotation_rad <= 1.0F;
     if (config.photometric_weight < 0.0F || config.photometric_weight > 1.0F ||
+        config.photometric_max_weight < config.photometric_weight ||
+        config.photometric_max_weight > 1.0F ||
+        config.photometric_adaptive_threshold < 0.0F ||
+        config.photometric_adaptive_threshold > 1.0F ||
         config.local_keyframe_fusion_weight < 0.0F ||
         config.local_keyframe_fusion_weight > 1.0F ||
+        config.sparse_fusion_weight < 0.0F ||
+        config.sparse_fusion_weight > 1.0F ||
+        config.sparse_translation_fusion_weight < 0.0F ||
+        config.sparse_translation_fusion_weight > 1.0F ||
+        config.window_fusion_weight < 0.0F ||
+        config.window_fusion_weight > 0.5F ||
+        config.map_fusion_weight < 0.0F ||
+        config.map_fusion_weight > 0.5F ||
         planar_translation_deadband_m_ < 0.0 || planar_translation_deadband_m_ > 0.05) {
       RCLCPP_ERROR(get_logger(), "fusion/photometric weight or planar deadband outside range");
       return false;
@@ -361,6 +468,22 @@ class RgbdOdometryNode final : public rclcpp::Node {
         std::chrono::steady_clock::now() - started).count();
     total_processing_ms_ += elapsed_ms;
     max_processing_ms_ = std::max(max_processing_ms_, elapsed_ms);
+    if (result.effective_photometric_weight > 0.0) {
+      total_observability_ += result.observability;
+      total_photometric_weight_ += result.effective_photometric_weight;
+      ++quality_samples_;
+    }
+    if (result.map_query_attempted) ++map_queries_;
+    max_map_descriptor_matches_ =
+        std::max(max_map_descriptor_matches_, result.map_descriptor_matches);
+    max_map_inliers_ = std::max(max_map_inliers_, result.map_match_inliers);
+    max_map_correction_m_ =
+        std::max(max_map_correction_m_, result.map_correction_m);
+    max_map_correction_rad_ =
+        std::max(max_map_correction_rad_, result.map_correction_rad);
+    if (result.map_relocalized) {
+      ++map_relocalizations_;
+    }
   }
 
   Eigen::Isometry3d output_pose() const {
@@ -447,9 +570,14 @@ class RgbdOdometryNode final : public rclcpp::Node {
   void report() {
     const double average_ms = successful_ == 0 ? 0.0 : total_processing_ms_ / successful_;
     RCLCPP_INFO(get_logger(),
-                "stats color=%lu depth=%lu paired=%lu ok=%lu failed=%lu dropped=%lu avg=%.2fms max=%.2fms RVV=off",
+                "stats color=%lu depth=%lu paired=%lu ok=%lu failed=%lu dropped=%lu avg=%.2fms max=%.2fms obs=%.4f photo=%.3f map=%lu/%lu corr=%.3fm/%.3frad matches=%d inliers=%d RVV=off",
                 received_color_, received_depth_, paired_, successful_, failed_, dropped_,
-                average_ms, max_processing_ms_);
+                average_ms, max_processing_ms_,
+                quality_samples_ == 0 ? 0.0 : total_observability_ / quality_samples_,
+                quality_samples_ == 0 ? 0.0 : total_photometric_weight_ / quality_samples_,
+                map_relocalizations_, map_queries_, max_map_correction_m_,
+                max_map_correction_rad_, max_map_descriptor_matches_,
+                max_map_inliers_);
   }
 
   bool parameters_valid_{true};
@@ -465,7 +593,7 @@ class RgbdOdometryNode final : public rclcpp::Node {
   int64_t last_output_stamp_ns_{0};
   double depth_scale_{1000.0};
   double min_depth_{0.2};
-  double max_depth_{8.0};
+  double max_depth_{4.5};
   double report_interval_s_{5.0};
   double planar_translation_deadband_m_{0.0015};
   std::string color_topic_, depth_topic_, camera_info_topic_, output_topic_;
@@ -488,7 +616,13 @@ class RgbdOdometryNode final : public rclcpp::Node {
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
   uint64_t received_color_{0}, received_depth_{0}, paired_{0}, successful_{0};
   uint64_t failed_{0}, dropped_{0};
+  uint64_t quality_samples_{0};
+  uint64_t map_queries_{0}, map_relocalizations_{0};
+  int max_map_descriptor_matches_{0}, max_map_inliers_{0};
   double total_processing_ms_{0.0}, max_processing_ms_{0.0};
+  double max_map_correction_m_{0.0};
+  double max_map_correction_rad_{0.0};
+  double total_observability_{0.0}, total_photometric_weight_{0.0};
 };
 
 }  // namespace rgbd_odometry
