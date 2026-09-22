@@ -17,8 +17,8 @@ rm -rf librealsense-2.57.4 librealsense-2.57.4.tar.gz
 ```bash
 ros2 launch realsense2_camera rs_launch.py camera_namespace:=/ \
   enable_color:=true enable_depth:=true \
-  rgb_camera.color_profile:=640,480,15 \
-  depth_module.depth_profile:=640,480,15 \
+  rgb_camera.color_profile:=640,480,30 \
+  depth_module.depth_profile:=640,480,30 \
   align_depth.enable:=true enable_sync:=true
 ```
 
@@ -145,6 +145,12 @@ ros2 run jdbot_base_bringup orbslam3_odom_to_tf --ros-args -p odom_topic:=/odom_
 ros2 launch cuvslam_rgbd cuvslam_rgbd.launch.py
 ```
 
+配合测试对比
+
+```bash
+ros2 run jdbot_base_bringup orbslam3_odom_to_tf --ros-args -p odom_topic:=/cuvslam/odom -p parent_frame:=odom -p child_frame:=base_footprint_cu
+```
+
 直接用于导航或者建图，深度相机侧帧率建议30FPS
 
 ```bash
@@ -152,3 +158,15 @@ ros2 launch cuvslam_rgbd cuvslam_rgbd.launch.py output_odom_topic:=/odom publish
 ```
 
 更多信息见：cuvslam/cuvslam_rgbd/README.md
+
+## 自研 rgbd 里程计
+
+```bash
+ros2 launch rgbd_odometry rgbd_odometry.launch.py
+```
+
+配合测试对比
+
+```bash
+ros2 run jdbot_base_bringup orbslam3_odom_to_tf --ros-args -p odom_topic:=/rgbd_odometry/odom -p parent_frame:=odom -p child_frame:=base_footprint_rgbd
+```

@@ -28,6 +28,7 @@ setup(
             'jdbot_base_bringup.orbslam3_odom_to_tf:main',
             'teleop_twist_keyboard_bias = '
             'jdbot_base_bringup.teleop_twist_keyboard_bias:main',
+            'tf_pose_diff = jdbot_base_bringup.tf_pose_diff:main',
         ],
     },
 )
