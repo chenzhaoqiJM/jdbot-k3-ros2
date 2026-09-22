@@ -118,7 +118,7 @@ ros2 launch orbslam3_ros2 rgbd_odometry.launch.py \
 ```
 
 ```bash
-ros2 run jdbot_base_bringup orbslam3_odom_to_tf
+ros2 run jdbot_base_bringup orbslam3_odom_to_tf --ros-args -p odom_topic:=/orbslam3/odom -p parent_frame:=odom -p child_frame:=base_footprint_orb
 ```
 
 ## rtabmap 里程计
@@ -129,7 +129,7 @@ ros2 launch jdbot_slam rtabmap_rgbd_odom.launch.py
 
 use_imu:=true 参数默认订阅 imu_topic:=/camera/imu
 
-测试用
+配合测试对比
 
 ```bash
 ros2 launch jdbot_slam rtabmap_rgbd_odom.launch.py odom_topic:=/odom_rtabmap publish_tf:=false
