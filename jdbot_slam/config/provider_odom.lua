@@ -37,7 +37,7 @@ options = {
 
 MAP_BUILDER.use_trajectory_builder_2d = true
 
--- 乐山雷达参数（根据 lsn10 实际规格调整）
+-- 激光雷达参数
 TRAJECTORY_BUILDER_2D.min_range = 0.15
 TRAJECTORY_BUILDER_2D.max_range = 10.0
 TRAJECTORY_BUILDER_2D.missing_data_ray_length = 3.
