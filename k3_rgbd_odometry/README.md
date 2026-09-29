@@ -49,6 +49,45 @@ source install/setup.bash
 ros2 launch k3_rgbd_odometry rgbd_odometry.launch.py
 ```
 
+### 常用 launch 参数
+
+默认值针对 D415 当前的 640×480、15 Hz 配置。下列常用项可直接在启动命令中覆盖，
+未列出的高级调优参数继续从 `config/k3_d415.yaml` 读取。
+
+| 参数 | 默认值 | 用途 |
+| --- | --- | --- |
+| `config_file` | 包内 `k3_d415.yaml` | 切换整套 YAML 配置 |
+| `namespace` / `node_name` | 空 / `k3_rgbd_odometry` | 节点命名空间和名称 |
+| `color_topic` | `/camera/color/image_raw` | 彩色图像话题 |
+| `depth_topic` | `/camera/aligned_depth_to_color/image_raw` | 对齐到彩色相机的深度话题 |
+| `camera_info_topic` | `/camera/color/camera_info` | 彩色相机内参话题 |
+| `odom_topic` | `/rgbd_odom/odom` | 里程计输出话题 |
+| `odom_frame` | `odom_rgbd` | 里程计父坐标系 |
+| `base_frame` | `base_footprint` | 查询相机外参时使用的机器人基座坐标系 |
+| `child_frame` | `base_footprint_rgbd` | 里程计和 TF 的子坐标系 |
+| `publish_tf` | `true` | 是否发布 TF |
+| `processing_rate_hz` | `20.0` | 最大处理频率；相机 15 Hz 时实际输出约 15 Hz |
+| `expected_frame_rate_hz` | `15.0` | 丢帧恢复所依据的相机帧率 |
+| `sync_tolerance_ms` | `40.0` | 彩色与深度帧最大时间差 |
+| `min_depth_m` / `max_depth_m` | `0.25` / `6.0` | 有效深度范围 |
+| `max_features` | `420` | 最大特征数，降低该值可进一步节省 CPU |
+| `loop_closure_enabled` | `true` | 是否启用轻量级回环校正 |
+| `use_sim_time` | `false` | 回放 rosbag 时使用 `/clock` |
+
+例如，直接发布标准的 `odom -> base_footprint`，并将处理上限设为 15 Hz：
+
+```bash
+ros2 launch k3_rgbd_odometry rgbd_odometry.launch.py \
+  odom_frame:=odom child_frame:=base_footprint \
+  processing_rate_hz:=15.0
+```
+
+查看完整参数列表：
+
+```bash
+ros2 launch k3_rgbd_odometry rgbd_odometry.launch.py --show-args
+```
+
 主要输出：
 
 - `/rgbd_odom/odom`：`nav_msgs/msg/Odometry`
