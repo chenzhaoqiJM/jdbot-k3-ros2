@@ -324,6 +324,34 @@ Eigen::Isometry3d LoopClosure::correctPose(const Eigen::Isometry3d& raw_pose) co
   return correction_ * raw_pose;
 }
 
+Eigen::Isometry3d LoopClosure::correctHistoricalPose(
+    const Eigen::Isometry3d& raw_pose, int64_t stamp_ns) const {
+  if (keyframes_.empty()) return raw_pose;
+  auto correction_at = [this](size_t index) {
+    const auto& keyframe = keyframes_[index];
+    return compose(keyframe.optimized_pose, inverse(keyframe.raw_pose));
+  };
+  Eigen::Vector3d correction;
+  if (stamp_ns <= keyframes_.front().stamp_ns) {
+    correction = correction_at(0);
+  } else if (stamp_ns >= keyframes_.back().stamp_ns) {
+    correction = correction_at(keyframes_.size() - 1);
+  } else {
+    const auto upper = std::upper_bound(
+        keyframes_.begin(), keyframes_.end(), stamp_ns,
+        [](int64_t stamp, const Keyframe& keyframe) { return stamp < keyframe.stamp_ns; });
+    const size_t after = static_cast<size_t>(upper - keyframes_.begin());
+    const size_t before = after - 1;
+    const double alpha = static_cast<double>(stamp_ns - keyframes_[before].stamp_ns) /
+        static_cast<double>(keyframes_[after].stamp_ns - keyframes_[before].stamp_ns);
+    const Eigen::Vector3d first = correction_at(before);
+    const Eigen::Vector3d second = correction_at(after);
+    correction.head<2>() = (1.0 - alpha) * first.head<2>() + alpha * second.head<2>();
+    correction.z() = wrap(first.z() + alpha * wrap(second.z() - first.z()));
+  }
+  return pose3d(compose(correction, pose2d(raw_pose)));
+}
+
 std::vector<OptimizedGraphPose> LoopClosure::optimizedPath() const {
   std::vector<OptimizedGraphPose> path;
   path.reserve(keyframes_.size());

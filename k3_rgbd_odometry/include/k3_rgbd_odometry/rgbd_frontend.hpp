@@ -36,6 +36,7 @@ struct FrontendConfig {
   float reprojection_threshold_px = 3.0F;
   float depth_scale = 0.001F;
   bool photometric_refinement = false;
+  bool planar_refinement = false;
 };
 
 struct TrackingResult {

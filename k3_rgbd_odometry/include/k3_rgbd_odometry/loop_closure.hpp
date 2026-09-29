@@ -52,6 +52,8 @@ class LoopClosure {
                            const Eigen::Isometry3d& raw_pose, int64_t stamp_ns,
                            double odometry_information = 1.0);
   Eigen::Isometry3d correctPose(const Eigen::Isometry3d& raw_pose) const;
+  Eigen::Isometry3d correctHistoricalPose(const Eigen::Isometry3d& raw_pose,
+                                          int64_t stamp_ns) const;
   std::vector<OptimizedGraphPose> optimizedPath() const;
   void reset();
 

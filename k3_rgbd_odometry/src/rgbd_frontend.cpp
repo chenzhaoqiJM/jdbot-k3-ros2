@@ -813,22 +813,14 @@ TrackingResult RgbdFrontend::process(const uint8_t* color, int color_step,
   const bool have_rigid_seed = estimateRigid(matches, transform, inliers);
   if (!have_rigid_seed && matches.size() < static_cast<size_t>(config_.min_features)) {
     result.reason = "insufficient tracked features";
-  } else if (have_base_from_camera_ &&
+  } else if (config_.planar_refinement && have_base_from_camera_ &&
              !refinePlanar(matches, transform, camera, inliers, result.reprojection_rmse)) {
     result.reason = "planar reprojection refinement failed";
-  } else if (!have_base_from_camera_ &&
+  } else if ((!config_.planar_refinement || !have_base_from_camera_) &&
              !refineReprojection(matches, transform, camera, inliers,
                                  result.reprojection_rmse)) {
     result.reason = "reprojection refinement failed";
   } else {
-    if (have_base_from_camera_ && config_.photometric_refinement) {
-      // Photometric refinement is optional: retain the geometrically verified
-      // estimate if illumination change makes the dense solve ill-conditioned.
-      Eigen::Isometry3d photometric = transform;
-      if (refinePhotometricPlanar(current_pyramid, photometric, camera)) {
-        transform = photometric;
-      }
-    }
     result.success = true;
     result.current_from_previous = transform * reference_to_previous_.inverse();
     result.inliers = static_cast<int>(inliers.size());

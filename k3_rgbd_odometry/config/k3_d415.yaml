@@ -3,10 +3,20 @@ k3_rgbd_odometry:
     color_topic: /camera/color/image_raw
     depth_topic: /camera/aligned_depth_to_color/image_raw
     camera_info_topic: /camera/color/camera_info
-    odom_topic: /rgbd_odom/odom
-    odom_frame: odom
+    # Same interface layout as cuVSLAM, with a collision-free package namespace.
+    odom_topic: /k3_rgbd_odometry/odom
+    odom_6d_topic: /k3_rgbd_odometry/odom_6d
+    tracking_topic: /k3_rgbd_odometry/tracking
+    inliers_topic: /k3_rgbd_odometry/inliers
+    loop_topic: /k3_rgbd_odometry/loop_closure
+    optimized_path_topic: /k3_rgbd_odometry/optimized_path
+    odom_frame: odom_k3_rgbd
     base_frame: base_footprint
-    child_frame: base_footprint_rgbd
+    child_frame: base_footprint_k3_rgbd
+    tf_odom_frame: odom_k3_rgbd
+    tf_child_frame: base_footprint_k3_rgbd
+    # Empty means the same frame as base_frame.
+    full_child_frame: ""
     publish_tf: true
 
     # Process every 15 Hz camera pair; the higher cap avoids dropping jittered frames.
@@ -14,6 +24,7 @@ k3_rgbd_odometry:
     expected_frame_rate_hz: 15.0
     # D415 color/depth may be phase shifted by roughly half a 15 Hz frame.
     sync_tolerance_ms: 40.0
+    tf_timeout_ms: 20.0
     pyramid_levels: 4
     cell_size: 24
     max_features: 420
@@ -28,13 +39,15 @@ k3_rgbd_odometry:
     ransac_iterations: 72
     reprojection_threshold_px: 3.0
     depth_scale: 0.001
-    photometric_refinement: false
-    max_translation_per_frame: 0.35
-    max_rotation_per_frame: 0.35
-    yaw_gain: 1.0
-    lateral_gain: 0.0
-    forward_gain: 0.95
-    gap_recovery_gain: 0.25
+    max_translation_per_frame: 0.50
+    max_rotation_per_frame: 0.60
+
+    # The full output is unmodified SE(3).  These settings only stabilize the
+    # navigation-friendly planar output.  Lateral motion and non-planar body
+    # motion are detected online; no chassis type is required.
+    planar.translation_scale: 0.95
+    planar.gap_recovery_strength: 0.25
+    planar.lateral_min_gain: 0.0
 
     loop_closure.enabled: true
     loop_closure.keyframe_translation_m: 0.45

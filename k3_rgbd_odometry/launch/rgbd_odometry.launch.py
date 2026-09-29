@@ -42,10 +42,22 @@ def generate_launch_description():
             description="Color camera calibration topic",
         ),
         DeclareLaunchArgument(
-            "odom_topic", default_value="/rgbd_odom/odom", description="Odometry output topic"
+            "odom_topic",
+            default_value="/k3_rgbd_odometry/odom",
+            description="Odometry output topic",
         ),
         DeclareLaunchArgument(
-            "odom_frame", default_value="odom_rgbd", description="Odometry reference frame"
+            "odom_6d_topic",
+            default_value="/k3_rgbd_odometry/odom_6d",
+            description="Full 6DoF odometry output topic",
+        ),
+        DeclareLaunchArgument(
+            "tracking_topic",
+            default_value="/k3_rgbd_odometry/tracking",
+            description="Tracking state output topic",
+        ),
+        DeclareLaunchArgument(
+            "odom_frame", default_value="odom_k3_rgbd", description="Odometry message frame"
         ),
         DeclareLaunchArgument(
             "base_frame",
@@ -54,8 +66,16 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             "child_frame",
-            default_value="base_footprint_rgbd",
-            description="Child frame written into odometry and TF output",
+            default_value="base_footprint_k3_rgbd",
+            description="Child frame written into the odometry message",
+        ),
+        DeclareLaunchArgument(
+            "tf_odom_frame", default_value="odom_k3_rgbd", description="TF parent frame"
+        ),
+        DeclareLaunchArgument(
+            "tf_child_frame",
+            default_value="base_footprint_k3_rgbd",
+            description="TF child frame",
         ),
         DeclareLaunchArgument(
             "publish_tf", default_value="true", description="Publish odom-to-child TF"
@@ -87,9 +107,9 @@ def generate_launch_description():
             description="Maximum tracked features; lower it to reduce CPU load",
         ),
         DeclareLaunchArgument(
-            "loop_closure_enabled",
+            "enable_loop_closure",
             default_value="true",
-            description="Enable lightweight loop-closure correction",
+            description="Correct the odometry output when a loop is accepted",
         ),
     ]
 
@@ -99,9 +119,13 @@ def generate_launch_description():
         "depth_topic": LaunchConfiguration("depth_topic"),
         "camera_info_topic": LaunchConfiguration("camera_info_topic"),
         "odom_topic": LaunchConfiguration("odom_topic"),
+        "odom_6d_topic": LaunchConfiguration("odom_6d_topic"),
+        "tracking_topic": LaunchConfiguration("tracking_topic"),
         "odom_frame": LaunchConfiguration("odom_frame"),
         "base_frame": LaunchConfiguration("base_frame"),
         "child_frame": LaunchConfiguration("child_frame"),
+        "tf_odom_frame": LaunchConfiguration("tf_odom_frame"),
+        "tf_child_frame": LaunchConfiguration("tf_child_frame"),
         "publish_tf": ParameterValue(LaunchConfiguration("publish_tf"), value_type=bool),
         "processing_rate_hz": ParameterValue(
             LaunchConfiguration("processing_rate_hz"), value_type=float
@@ -116,7 +140,7 @@ def generate_launch_description():
         "max_depth_m": ParameterValue(LaunchConfiguration("max_depth_m"), value_type=float),
         "max_features": ParameterValue(LaunchConfiguration("max_features"), value_type=int),
         "loop_closure.enabled": ParameterValue(
-            LaunchConfiguration("loop_closure_enabled"), value_type=bool
+            LaunchConfiguration("enable_loop_closure"), value_type=bool
         ),
     }
 
