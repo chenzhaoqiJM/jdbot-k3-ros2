@@ -1,0 +1,23 @@
+lidar_2d_odometry:
+  ros__parameters:
+    scan_topic: /scan
+    odom_topic: /odom
+    odom_frame: odom
+    tracking_frame: base_footprint
+    publish_tf: true
+    min_range: 0.15
+    max_range: 10.0
+    transform_timeout: 0.2
+    voxel_size: 0.045
+    correspondence_distance: 0.28
+    huber_scale: 0.06
+    keyframe_translation: 0.12
+    keyframe_rotation: 0.06
+    translation_prediction_weight: 2.0
+    rotation_prediction_weight: 4.0
+    max_iterations: 12
+    min_correspondences: 35
+    max_keyframes: 90
+    velocity_filter_alpha: 0.35
+    pose_covariance_diagonal: [0.0025, 0.0025, 1000000.0, 1000000.0, 1000000.0, 0.0012]
+    twist_covariance_diagonal: [0.01, 0.01, 1000000.0, 1000000.0, 1000000.0, 0.0076]

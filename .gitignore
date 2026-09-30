@@ -19,3 +19,7 @@ env/
 *.tmp
 *.swp
 .DS_Store
+
+log
+install
+build
