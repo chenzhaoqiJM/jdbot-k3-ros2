@@ -1,15 +1,10 @@
-# Lightweight 2D LiDAR odometry
+# 轻量级 2D 激光雷达里程计
 
-`lidar_2d_odometry` is a standalone ROS 2 scan-to-local-map odometry node. It
-does not link Cartographer, Ceres, PCL, or RF2O. Its only non-ROS numerical
-dependency is Eigen.
+`lidar_2d_odometry` 是一个独立的 ROS 2 二维激光雷达里程计节点，采用激光帧到局部地图的匹配方式估计机器人位姿。除 ROS 2 组件外，仅依赖 Eigen，不依赖 Ceres、PCL 或 RF2O。
 
-The matcher uses a constant-velocity initial estimate, point-to-line ICP with a
-Huber loss, and a bounded keyframe map. Laser points are transformed into the
-configured tracking frame through TF, so the laser mounting pose is not baked
-into the implementation.
+匹配器使用恒速模型提供初始位姿估计，通过带 Huber 鲁棒核的点到线 ICP 完成扫描匹配，并使用数量受限的关键帧维护局部地图。激光点会通过 TF 转换到配置的跟踪坐标系，因此算法实现不依赖固定的激光雷达安装位姿。
 
-## Build and run
+## 编译与运行
 
 ```bash
 cd ~/jdbot_ws
@@ -19,46 +14,38 @@ source install/setup.bash
 ros2 launch lidar_2d_odometry lidar_2d_odometry.launch.py
 ```
 
-可在 launch 命令中覆盖坐标系，例如：
+可在启动命令中覆盖话题、坐标系等参数，例如：
 
 ```bash
 ros2 launch lidar_2d_odometry lidar_2d_odometry.launch.py \
   tracking_frame:=base_link odom_frame:=laser_odom
 ```
 
-Input is `/scan` (`sensor_msgs/msg/LaserScan`). Output is `/odom`
-(`nav_msgs/msg/Odometry`) and, unless disabled, `odom -> base_footprint` TF.
+## 输入与输出
 
-When replaying the supplied acceptance bag, avoid colliding with its recorded
-odometry and TF:
+- 输入：`/scan`（`sensor_msgs/msg/LaserScan`）
+- 输出：`/odom`（`nav_msgs/msg/Odometry`）
+- TF：默认发布 `odom -> base_footprint`，可通过 `publish_tf:=false` 关闭
+
+回放包含已有里程计或 TF 的数据包时，应避免话题和 TF 冲突。例如：
 
 ```bash
 ros2 launch lidar_2d_odometry lidar_2d_odometry.launch.py \
-  publish_tf:=false odom_topic:=/lidar_odom
-ros2 bag play ~/carto_odom_test_data
+  publish_tf:=false odom_topic:=/lidar_odom use_sim_time:=true
+ros2 bag play <验收数据包路径> --clock
 ```
 
-All matcher limits are parameters in `config/lidar_2d_odometry.yaml`. The local
-map is deliberately bounded by `max_keyframes`; memory and nearest-neighbour
-query cost therefore remain bounded during long runs.
+## 参数配置
 
-## Acceptance result
+匹配器参数位于 `config/lidar_2d_odometry.yaml`，主要包括：
 
-The complete `~/carto_odom_test_data` bag was replayed at 4x speed on the same
-host for both packages. Each scan pose was timestamp-interpolated against the
-recorded `/odom` trajectory and the trajectories were rigidly aligned in 2D.
-Distances below are position errors.
+- 激光有效距离：`min_range`、`max_range`
+- 点云降采样：`voxel_size`
+- 匹配约束：`correspondence_distance`、`huber_scale`
+- 迭代控制：`max_iterations`、`min_correspondences`
+- 关键帧判定：`keyframe_translation`、`keyframe_rotation`
+- 局部地图大小：`max_keyframes`
+- 速度滤波：`velocity_filter_alpha`
 
-| implementation | mean | RMSE | P95 | maximum |
-| --- | ---: | ---: | ---: | ---: |
-| `cartographer_lidar_odometry` | 0.77 cm | 0.89 cm | 1.54 cm | 3.05 cm |
-| `lidar_2d_odometry` | 2.22 cm | 2.41 cm | 3.82 cm | 5.51 cm |
-| increase | **1.45 cm** | **1.52 cm** | **2.28 cm** | **2.45 cm** |
+局部地图中的关键帧数量由 `max_keyframes` 限制，因此长时间运行时的内存占用和近邻查询开销均保持有界。
 
-All measured error increases are below 3 cm. Both runs produced one pose per
-accepted scan (896 Cartographer poses after its initializer, 897 lightweight
-poses). GNU `time -v` measured 2.86 seconds of CPU time and 24.4 MiB peak RSS
-for this package, versus 5.65 seconds and 43.0 MiB for Cartographer. The test
-machine, ROS installation, bag, playback rate, and process wrapper were kept
-the same. These figures are acceptance-bag results, not a general accuracy
-guarantee for different sensors or environments.
