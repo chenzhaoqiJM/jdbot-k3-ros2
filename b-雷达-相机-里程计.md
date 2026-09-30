@@ -162,11 +162,11 @@ ros2 launch cuvslam_rgbd cuvslam_rgbd.launch.py output_odom_topic:=/odom publish
 ## 自研 rgbd 里程计
 
 ```bash
-ros2 launch k3_rgbd_odometry rgbd_odometry.launch.py odom_frame:=odom child_frame:=base_footprint_rgbd
+ros2 launch k3_rgbd_odometry rgbd_odometry.launch.py tf_odom_frame:=odom tf_child_frame:=base_footprint_rgbd
 ```
 
 直接用于导航或者建图
 
 ```bash
-ros2 launch k3_rgbd_odometry rgbd_odometry.launch.py odom_frame:=odom child_frame:=base_footprint odom_topic:=/odom
+ros2 launch k3_rgbd_odometry rgbd_odometry.launch.py tf_odom_frame:=odom tf_child_frame:=base_footprint odom_frame:=odom odom_6d_topic:=/odom
 ```
