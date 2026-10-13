@@ -25,21 +25,23 @@ slam_toolbox:
 
     debug_logging: false
     throttle_scans: 1
-    transform_publish_period: 0.02 #if 0 never publishes odometry
-    map_update_interval: 0.2
+    transform_publish_period: 0.02 # map -> odom TF 发布周期；0 表示不发布
+    map_update_interval: 1.0 # 栅格地图更新周期，降低大地图的计算开销
     resolution: 0.05
-    max_laser_range: 20.0 #for rastering images
-    minimum_time_interval: 0.5
+    max_laser_range: 12.0 # 匹配默认 ydlidar_jdbot.yaml；换雷达时按可靠测距调整
+    minimum_time_interval: 0.1 # 扫描处理的最小时间间隔，仍受运动门槛限制
     transform_timeout: 0.2
     tf_buffer_duration: 30.
     stack_size_to_use: 40000000 #// program needs a larger stack size to serialize large maps
-    enable_interactive_mode: true
+    enable_interactive_mode: false # 使用 RViz 交互编辑位姿图时再开启
 
     # General Parameters
     use_scan_matching: true
     use_scan_barycenter: true
-    minimum_travel_distance: 0.5
-    minimum_travel_heading: 0.5
+    # 室内低速建图的起始值：距离单位 m，角度单位 rad
+    # slam_toolbox 2.6.10 还有平移预过滤，单独降低角度门槛不能解决原地旋转不更新
+    minimum_travel_distance: 0.1
+    minimum_travel_heading: 0.1
     scan_buffer_size: 10
     scan_buffer_maximum_scan_distance: 10.0
     link_match_minimum_response_fine: 0.1
