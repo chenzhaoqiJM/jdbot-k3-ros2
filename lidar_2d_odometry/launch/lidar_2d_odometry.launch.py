@@ -14,6 +14,7 @@ def generate_launch_description():
         DeclareLaunchArgument('scan_topic', default_value='/scan'),
         DeclareLaunchArgument('odom_topic', default_value='/odom'),
         DeclareLaunchArgument('tracking_frame', default_value='base_footprint'),
+        DeclareLaunchArgument('child_frame', default_value=LaunchConfiguration('tracking_frame')),
         DeclareLaunchArgument('odom_frame', default_value='odom'),
         DeclareLaunchArgument('publish_tf', default_value='true'),
         Node(
@@ -28,6 +29,7 @@ def generate_launch_description():
                     'scan_topic': LaunchConfiguration('scan_topic'),
                     'odom_topic': LaunchConfiguration('odom_topic'),
                     'tracking_frame': LaunchConfiguration('tracking_frame'),
+                    'child_frame': LaunchConfiguration('child_frame'),
                     'odom_frame': LaunchConfiguration('odom_frame'),
                     'publish_tf': LaunchConfiguration('publish_tf'),
                 },

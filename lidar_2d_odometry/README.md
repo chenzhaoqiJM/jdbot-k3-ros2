@@ -2,7 +2,7 @@
 
 `lidar_2d_odometry` 是一个独立的 ROS 2 二维激光雷达里程计节点，采用激光帧到局部地图的匹配方式估计机器人位姿。除 ROS 2 组件外，仅依赖 Eigen，不依赖 Ceres、PCL 或 RF2O。
 
-匹配器使用恒速模型提供初始位姿估计，通过带 Huber 鲁棒核的点到线 ICP 完成扫描匹配，并使用数量受限的关键帧维护局部地图。激光点会通过 TF 转换到配置的跟踪坐标系，因此算法实现不依赖固定的激光雷达安装位姿。
+匹配器使用恒速模型提供初始位姿估计，通过带 Huber 鲁棒核的点到线 ICP 完成扫描匹配，并使用数量受限的关键帧维护局部地图。法向由连续邻域直线拟合得到，跨深度跳变和拐角的邻域会被剔除；局部地图按体素融合位置与一致法向，减小单帧噪声造成的累计漂移。激光点会通过 TF 转换到配置的跟踪坐标系，因此算法实现不依赖固定的激光雷达安装位姿。
 
 ## 编译与运行
 
@@ -27,6 +27,16 @@ ros2 launch lidar_2d_odometry lidar_2d_odometry.launch.py \
 - 输出：`/odom`（`nav_msgs/msg/Odometry`）
 - TF：默认发布 `odom -> base_footprint`，可通过 `publish_tf:=false` 关闭
 
+与 Gazebo 真值、Cartographer 同时比较时，可以单独配置输出的子坐标系：
+
+```bash
+ros2 launch lidar_2d_odometry lidar_2d_odometry.launch.py \
+  use_sim_time:=true odom_topic:=/odom_self \
+  tracking_frame:=base_footprint child_frame:=base_footprint_self
+```
+
+`tracking_frame` 用于查询雷达到机器人基座的外参；`child_frame` 仅指定同一基座位姿的输出名称，默认跟随 `tracking_frame`。上述配置输出 `odom -> base_footprint_self`，不会发布 Gazebo 的 `odom -> base_footprint`。节点不订阅轮式里程计或 Cartographer 里程计。
+
 回放包含已有里程计或 TF 的数据包时，应避免话题和 TF 冲突。例如：
 
 ```bash
@@ -44,8 +54,8 @@ ros2 bag play <验收数据包路径> --clock
 - 匹配约束：`correspondence_distance`、`huber_scale`
 - 迭代控制：`max_iterations`、`min_correspondences`
 - 关键帧判定：`keyframe_translation`、`keyframe_rotation`
-- 局部地图大小：`max_keyframes`
-- 速度滤波：`velocity_filter_alpha`
+- 局部地图大小：`max_keyframes`（默认 180）
+- 速度滤波：`velocity_filter_alpha`（默认 0.8；越小越平滑，但加减速延迟越大）。速度由相邻位姿的 SE(2) 对数映射计算。
 
 局部地图中的关键帧数量由 `max_keyframes` 限制，因此长时间运行时的内存占用和近邻查询开销均保持有界。
 

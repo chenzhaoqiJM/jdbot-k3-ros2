@@ -52,12 +52,13 @@ class LidarOdometryNode final : public rclcpp::Node {
     odom_frame_ = declare_parameter<std::string>("odom_frame", "odom");
     tracking_frame_ =
         declare_parameter<std::string>("tracking_frame", "base_footprint");
+    child_frame_ = declare_parameter<std::string>("child_frame", tracking_frame_);
     publish_tf_ = declare_parameter<bool>("publish_tf", true);
     min_range_ = declare_parameter<double>("min_range", 0.15);
     max_range_ = declare_parameter<double>("max_range", 10.0);
     transform_timeout_ = declare_parameter<double>("transform_timeout", 0.2);
     velocity_filter_alpha_ =
-        declare_parameter<double>("velocity_filter_alpha", 0.35);
+        declare_parameter<double>("velocity_filter_alpha", 0.8);
     pose_covariance_ = Covariance(declare_parameter<std::vector<double>>(
         "pose_covariance_diagonal",
         {0.0025, 0.0025, 1e6, 1e6, 1e6, 0.0012}));
@@ -102,7 +103,7 @@ class LidarOdometryNode final : public rclcpp::Node {
     options.max_iterations = declare_parameter<int>("max_iterations", 12);
     options.min_correspondences =
         declare_parameter<int>("min_correspondences", 35);
-    options.max_keyframes = declare_parameter<int>("max_keyframes", 90);
+    options.max_keyframes = declare_parameter<int>("max_keyframes", 180);
     return options;
   }
 
@@ -124,6 +125,12 @@ class LidarOdometryNode final : public rclcpp::Node {
     const rclcpp::Time scan_end_time =
         rclcpp::Time(message->header.stamp) +
         rclcpp::Duration::from_seconds(scan_duration);
+
+    if (have_previous_pose_ && scan_end_time <= previous_time_) {
+      RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 2000,
+                          "Ignoring non-monotonic scan timestamp");
+      return;
+    }
 
     geometry_msgs::msg::TransformStamped sensor_to_tracking;
     try {
@@ -177,7 +184,7 @@ class LidarOdometryNode final : public rclcpp::Node {
     nav_msgs::msg::Odometry odometry;
     odometry.header.stamp = stamp;
     odometry.header.frame_id = odom_frame_;
-    odometry.child_frame_id = tracking_frame_;
+    odometry.child_frame_id = child_frame_;
     odometry.pose.pose.position.x = pose.x;
     odometry.pose.pose.position.y = pose.y;
     odometry.pose.pose.orientation.z = std::sin(0.5 * pose.yaw);
@@ -189,10 +196,8 @@ class LidarOdometryNode final : public rclcpp::Node {
     if (have_previous_pose_) {
       const double dt = (time - previous_time_).seconds();
       if (dt > 0.0 && dt < 1.0) {
-        const Pose2d delta = ScanMatcher::Compose(
-            ScanMatcher::Inverse(previous_pose_), pose);
-        const std::array<double, 3> raw{delta.x / dt, delta.y / dt,
-                                        delta.yaw / dt};
+        const Eigen::Vector3d velocity = ScanMatcher::Velocity(previous_pose_, pose, dt);
+        const std::array<double, 3> raw{velocity.x(), velocity.y(), velocity.z()};
         if (!have_velocity_) filtered_velocity_ = raw;
         for (std::size_t i = 0; i < raw.size(); ++i) {
           filtered_velocity_[i] =
@@ -200,6 +205,9 @@ class LidarOdometryNode final : public rclcpp::Node {
               (1.0 - velocity_filter_alpha_) * filtered_velocity_[i];
         }
         have_velocity_ = true;
+      } else {
+        have_velocity_ = false;
+        filtered_velocity_ = {};
       }
     }
     if (have_velocity_) {
@@ -214,7 +222,7 @@ class LidarOdometryNode final : public rclcpp::Node {
     if (publish_tf_) {
       geometry_msgs::msg::TransformStamped transform;
       transform.header = odometry.header;
-      transform.child_frame_id = tracking_frame_;
+      transform.child_frame_id = child_frame_;
       transform.transform.translation.x = pose.x;
       transform.transform.translation.y = pose.y;
       transform.transform.rotation = odometry.pose.pose.orientation;
@@ -235,11 +243,12 @@ class LidarOdometryNode final : public rclcpp::Node {
   std::string odom_topic_;
   std::string odom_frame_;
   std::string tracking_frame_;
+  std::string child_frame_;
   bool publish_tf_ = true;
   double min_range_ = 0.15;
   double max_range_ = 10.0;
   double transform_timeout_ = 0.2;
-  double velocity_filter_alpha_ = 0.35;
+  double velocity_filter_alpha_ = 0.8;
   std::array<double, 36> pose_covariance_{};
   std::array<double, 36> twist_covariance_{};
   bool have_previous_pose_ = false;

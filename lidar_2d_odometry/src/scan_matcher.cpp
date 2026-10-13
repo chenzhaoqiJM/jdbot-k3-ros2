@@ -1,6 +1,7 @@
 #include "lidar_2d_odometry/scan_matcher.hpp"
 
 #include <Eigen/Cholesky>
+#include <Eigen/Eigenvalues>
 
 #include <algorithm>
 #include <cmath>
@@ -20,7 +21,17 @@ double SquaredDistance(const Pose2d& a, const Pose2d& b) {
 }  // namespace
 
 ScanMatcher::ScanMatcher(MatcherOptions options) : options_(options) {
-  if (!(options_.voxel_size > 0.0) ||
+  const double values[] = {options_.voxel_size, options_.correspondence_distance,
+      options_.huber_scale, options_.keyframe_translation,
+      options_.keyframe_rotation, options_.translation_prediction_weight,
+      options_.rotation_prediction_weight};
+  for (const double value : values) {
+    if (!std::isfinite(value)) throw std::invalid_argument("non-finite matcher option");
+  }
+  if (options_.keyframe_translation <= 0.0 || options_.keyframe_rotation <= 0.0 ||
+      options_.translation_prediction_weight < 0.0 ||
+      options_.rotation_prediction_weight < 0.0 ||
+      !(options_.voxel_size > 0.0) ||
       !(options_.correspondence_distance > options_.voxel_size) ||
       !(options_.huber_scale > 0.0) || options_.max_iterations < 1 ||
       options_.min_correspondences < 3 || options_.max_keyframes < 2) {
@@ -46,6 +57,20 @@ Pose2d ScanMatcher::Inverse(const Pose2d& pose) {
           NormalizeAngle(-pose.yaw)};
 }
 
+Eigen::Vector3d ScanMatcher::Velocity(const Pose2d& previous,
+                                      const Pose2d& current, double dt) {
+  if (!std::isfinite(dt) || dt <= 0.0) {
+    throw std::invalid_argument("velocity interval must be finite and positive");
+  }
+  const Pose2d delta = Compose(Inverse(previous), current);
+  const double w = delta.yaw;
+  const double a = std::abs(w) < 1e-6 ? 1.0 - w * w / 6.0 : std::sin(w) / w;
+  const double b = std::abs(w) < 1e-6 ? w / 2.0 - w * w * w / 24.0 : (1.0 - std::cos(w)) / w;
+  const double denominator = a * a + b * b;
+  return Eigen::Vector3d((a * delta.x + b * delta.y) / denominator,
+                         (-b * delta.x + a * delta.y) / denominator, w) / dt;
+}
+
 Eigen::Vector2d ScanMatcher::Transform(const Pose2d& pose,
                                        const Eigen::Vector2d& point) {
   const double c = std::cos(pose.yaw);
@@ -67,17 +92,33 @@ std::vector<ScanMatcher::OrientedPoint> ScanMatcher::PrepareScan(
   result.reserve(points.size());
   std::unordered_set<Cell> occupied;
   for (std::size_t i = 2; i + 2 < points.size(); ++i) {
-    const Eigen::Vector2d tangent = points[i + 2] - points[i - 2];
-    if (tangent.squaredNorm() < 1e-5 ||
-        (points[i] - points[i - 1]).norm() > 0.35 ||
-        (points[i + 1] - points[i]).norm() > 0.35) {
-      continue;
+    // Fit all five neighbours instead of differencing two noisy endpoints.
+    // Reject the entire window across a depth discontinuity or a corner.
+    Eigen::Vector2d mean = Eigen::Vector2d::Zero();
+    bool continuous = true;
+    for (std::size_t j = i - 2; j <= i + 2; ++j) {
+      mean += points[j];
+      if (!points[j].allFinite() ||
+          (j > i - 2 && (points[j] - points[j - 1]).norm() > 0.35)) {
+        continuous = false;
+      }
     }
+    if (!continuous) continue;
+    mean /= 5.0;
+    Eigen::Matrix2d covariance = Eigen::Matrix2d::Zero();
+    for (std::size_t j = i - 2; j <= i + 2; ++j) {
+      const Eigen::Vector2d d = points[j] - mean;
+      covariance.noalias() += d * d.transpose();
+    }
+    const Eigen::SelfAdjointEigenSolver<Eigen::Matrix2d> eigen(covariance);
+    if (eigen.eigenvalues()[1] < 1e-5 ||
+        eigen.eigenvalues()[0] > 0.05 * eigen.eigenvalues()[1]) continue;
+    const Eigen::Vector2d normal = eigen.eigenvectors().col(0);
     const int ix = static_cast<int>(std::floor(points[i].x() / options_.voxel_size));
     const int iy = static_cast<int>(std::floor(points[i].y() / options_.voxel_size));
     if (!occupied.insert(CellKey(ix, iy)).second) continue;
-    Eigen::Vector2d normal(-tangent.y(), tangent.x());
-    normal.normalize();
+    // Keep the measured endpoint: projecting it onto the fitted line biases
+    // curved objects and turns a normal estimate into a range measurement.
     result.push_back({points[i], normal});
   }
   return result;
@@ -200,18 +241,32 @@ void ScanMatcher::AddKeyframe(const std::vector<OrientedPoint>& scan,
 void ScanMatcher::RebuildMap() {
   map_points_.clear();
   spatial_index_.clear();
-  std::unordered_set<Cell> occupied;
-  // Keep the newest observation in each fine voxel. This avoids overweighting
-  // walls merely because the robot was stationary near them for many scans.
-  for (auto keyframe = keyframes_.rbegin(); keyframe != keyframes_.rend();
-       ++keyframe) {
-    for (const auto& point : keyframe->points) {
-      const int x = static_cast<int>(
-          std::floor(point.position.x() / options_.voxel_size));
-      const int y = static_cast<int>(
-          std::floor(point.position.y() / options_.voxel_size));
-      if (occupied.insert(CellKey(x, y)).second) map_points_.push_back(point);
+  // Fuse consistent observations rather than replacing a wall with the newest
+  // noisy endpoint. Visit oldest first to anchor each voxel's surface direction;
+  // incompatible normals at corners must not be averaged together.
+  struct Accumulator {
+    Eigen::Vector2d position = Eigen::Vector2d::Zero();
+    Eigen::Vector2d normal = Eigen::Vector2d::Zero();
+    int count = 0;
+  };
+  std::unordered_map<Cell, std::size_t> occupied;
+  std::vector<Accumulator> accumulators;
+  for (const auto& keyframe : keyframes_) {
+    for (const auto& point : keyframe.points) {
+      const int x = static_cast<int>(std::floor(point.position.x() / options_.voxel_size));
+      const int y = static_cast<int>(std::floor(point.position.y() / options_.voxel_size));
+      auto inserted = occupied.emplace(CellKey(x, y), accumulators.size());
+      if (inserted.second) accumulators.emplace_back();
+      auto& a = accumulators[inserted.first->second];
+      const double sign = a.normal.dot(point.normal) < 0.0 ? -1.0 : 1.0;
+      if (a.count && std::abs(a.normal.normalized().dot(point.normal)) < 0.9) continue;
+      a.position += point.position;
+      a.normal += sign * point.normal;
+      ++a.count;
     }
+  }
+  for (const auto& a : accumulators) {
+    map_points_.push_back({a.position / a.count, a.normal.normalized()});
   }
   spatial_index_.reserve(map_points_.size());
   for (std::size_t i = 0; i < map_points_.size(); ++i) {

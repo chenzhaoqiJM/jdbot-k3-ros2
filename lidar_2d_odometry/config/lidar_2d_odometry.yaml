@@ -17,7 +17,7 @@ lidar_2d_odometry:
     rotation_prediction_weight: 4.0
     max_iterations: 12
     min_correspondences: 35
-    max_keyframes: 90
-    velocity_filter_alpha: 0.35
+    max_keyframes: 180
+    velocity_filter_alpha: 0.8
     pose_covariance_diagonal: [0.0025, 0.0025, 1000000.0, 1000000.0, 1000000.0, 0.0012]
     twist_covariance_diagonal: [0.01, 0.01, 1000000.0, 1000000.0, 1000000.0, 0.0076]

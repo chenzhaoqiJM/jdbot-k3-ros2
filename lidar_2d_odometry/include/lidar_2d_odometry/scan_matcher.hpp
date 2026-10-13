@@ -26,7 +26,7 @@ struct MatcherOptions {
   double rotation_prediction_weight = 4.0;
   int max_iterations = 12;
   int min_correspondences = 35;
-  int max_keyframes = 90;
+  int max_keyframes = 180;
 };
 
 struct MatchResult {
@@ -48,6 +48,9 @@ class ScanMatcher {
   static Pose2d Compose(const Pose2d& a, const Pose2d& b);
   static Pose2d Inverse(const Pose2d& pose);
   static double NormalizeAngle(double angle);
+  // Body-frame constant twist from the SE(2) logarithm of the pose increment.
+  static Eigen::Vector3d Velocity(const Pose2d& previous,
+                                  const Pose2d& current, double dt);
 
  private:
   struct OrientedPoint {
