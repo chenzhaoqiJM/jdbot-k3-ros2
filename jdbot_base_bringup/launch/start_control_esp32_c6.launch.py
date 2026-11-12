@@ -2,13 +2,15 @@
 
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
-from launch.substitutions import LaunchConfiguration
+from launch.conditions import IfCondition
+from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch_ros.actions import Node
 
 
 def generate_launch_description():
 
     # ================== 声明 Launch 参数 ==================
+    use_cpp = LaunchConfiguration('use_cpp')
     serial_port = LaunchConfiguration('serial_port')
     baudrate = LaunchConfiguration('baudrate')
     send_hz = LaunchConfiguration('send_hz')
@@ -38,6 +40,12 @@ def generate_launch_description():
     straight_balance_kd = LaunchConfiguration('straight_balance_kd')
     cfg_send_on_startup = LaunchConfiguration('cfg_send_on_startup')
     debug = LaunchConfiguration('debug')
+
+    declare_use_cpp = DeclareLaunchArgument(
+        'use_cpp',
+        default_value='false',
+        description='Use the C++ ESP32 control node (jdbot_esp32_c6_control) instead of the Python node'
+    )
 
     declare_serial_port = DeclareLaunchArgument(
         'serial_port',
@@ -257,6 +265,44 @@ def generate_launch_description():
         package='jdbot_base_bringup',
         executable='ros2_ctrl_odom_node',
         name='ros2_ctrl_odom_node',
+        condition=IfCondition(PythonExpression(["'", use_cpp, "' == 'false'"])),
+        parameters=[{
+            'serial_port': serial_port,
+            'baudrate': baudrate,
+            'send_hz': send_hz,
+            'odom_hz': odom_hz,
+            'cmd_vel_timeout': cmd_vel_timeout,
+            'cmd_vel_deadzone_threshold': cmd_vel_deadzone_threshold,
+            'min_linear_speed': min_linear_speed,
+            'min_angular_speed': min_angular_speed,
+            'publish_tf': publish_tf,
+            'odom_topic': odom_topic,
+            'odom_frame': odom_frame,
+            'base_frame': base_frame,
+            'motor1_factor':motor1_factor,
+            'motor2_factor':motor2_factor,
+            'wheel_diameter': wheel_diameter,
+            'wheel_base': wheel_base,
+            'feedback_pwm_deadzone': feedback_pwm_deadzone,
+            'encoder_ppr': encoder_ppr,
+            'reduction_ratio': reduction_ratio,
+            'ff_factor': ff_factor,
+            'pid_kp': pid_kp,
+            'pid_ki': pid_ki,
+            'pid_kd': pid_kd,
+            'straight_balance_kp': straight_balance_kp,
+            'straight_balance_ki': straight_balance_ki,
+            'straight_balance_kd': straight_balance_kd,
+            'cfg_send_on_startup': cfg_send_on_startup,
+            'debug': debug,
+        }]
+    )
+
+    drive_node_cpp = Node(
+        package='jdbot_esp32_c6_control',
+        executable='esp32_c6_control_node',
+        name='esp32_c6_control_node',
+        condition=IfCondition(PythonExpression(["'", use_cpp, "' == 'true'"])),
         parameters=[{
             'serial_port': serial_port,
             'baudrate': baudrate,
@@ -290,6 +336,7 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
+        declare_use_cpp,
         declare_serial_port,
         declare_baudrate,
         declare_send_hz,
@@ -325,4 +372,5 @@ def generate_launch_description():
         tf2_node_imu,
         tf2_node_rgbd,
         drive_node,
+        drive_node_cpp,
     ])
