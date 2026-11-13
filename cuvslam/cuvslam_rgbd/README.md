@@ -2,7 +2,7 @@
 
 这是一个面向 CPU/RVV 版本 cuVSLAM 的 ROS 2 RGB-D 里程计封装。
 
-节点只使用对齐后的彩色图像、深度图像、相机标定信息以及相机到机器人本体的 TF，不依赖任何参考里程计，也不会执行轨迹对比、误差评估或结果文件输出。
+节点使用对齐后的彩色图像、深度图像、相机标定信息以及相机到机器人本体的 TF，可选接入合并后的 IMU，不依赖任何参考里程计，也不会执行轨迹对比、误差评估或结果文件输出。
 
 ## 功能
 
@@ -16,7 +16,7 @@
 节点发布：
 
 - `/cuvslam/odom`（`nav_msgs/msg/Odometry`）：cuVSLAM 里程计
-- `/cuvslam/tracking`（`std_msgs/msg/Bool`）：当前帧是否跟踪成功
+- `/cuvslam/tracking`（`std_msgs/msg/Bool`）：当前帧是否输出有效位姿（启用 IMU 后可包含短时惯性恢复）
 
 节点启动时通过 TF 获取 `rig_frame <- camera_color_optical_frame` 变换，并用它构建 cuVSLAM 相机 Rig。默认不发布里程计 TF，避免与底盘或其他定位节点产生 TF 冲突。
 
@@ -125,3 +125,36 @@ ros2 topic hz /cuvslam/odom
 ```bash
 ros2 topic echo /cuvslam/tracking
 ```
+
+## CPU/RVV RGB-D + IMU
+
+需要安装支持 CPU/RVV RGB-D IMU 融合的 cuvslam 后端。默认关闭 IMU，启用方式：
+
+```bash
+ros2 launch cuvslam_rgbd cuvslam_rgbd.launch.py \
+  enable_imu:=true imu_topic:=/camera/imu imu_frequency:=200.0
+```
+
+RealSense 需要 `enable_gyro:=true enable_accel:=true unite_imu_method:=2`。
+输入为合并后的 `sensor_msgs/Imu`，使用角速度和包含重力的加速度，不使用 orientation。
+必须存在 `rig_frame <- IMU header.frame_id` 的 TF。启动后保持静止至少 1 秒，
+日志中的 `IMU initialized=True` 表示初始化完成。
+
+| 参数 | 默认值 | 说明 |
+| --- | --- | --- |
+| `enable_imu` | `false` | 启用后端 IMU 融合 |
+| `imu_topic` | `/camera/imu` | 合并后的 IMU 话题 |
+| `imu_frequency` | `200.0` | IMU 实际采样频率，Hz |
+| `imu_queue_size` | `2000` | IMU 订阅和缓存上限 |
+| `imu_wait_s` | `0.15` | 图像等候 IMU 时间戳赶上的最长时间，秒 |
+| `gyroscope_noise_density` | `0.006067337` | gyro 噪声密度 |
+| `gyroscope_random_walk` | `0.00003621195` | gyro bias 随机游走 |
+| `accelerometer_noise_density` | `0.033621979` | accel 噪声密度 |
+| `accelerometer_random_walk` | `0.0009825659` | accel bias 随机游走 |
+
+噪声默认值来自后端 RealSense 示例，有独立标定结果时应替换。
+节点按时间戳顺序串行提交 IMU 和图像，运行日志包含 IMU 提交、丢弃和图像丢弃计数。
+影响订阅与 Tracker 初始化的参数需要在启动时指定，修改后重启节点。
+
+当前为实验功能，仍存在位置与航向漂移。短时惯性恢复最多持续 0.25 秒，
+持续视觉丢失超出恢复窗口后需重启跟踪；此扩展不提供全局重定位。
