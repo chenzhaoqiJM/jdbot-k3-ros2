@@ -26,6 +26,36 @@ source install/setup.bash
 这里的安装目录适用于默认的隔离安装布局；使用 `--merge-install` 时应使用新的
 build/install 目录，避免旧 Python 入口或包元数据残留。
 
+## Fast LIO2 平面里程计转换
+
+```bash
+ros2 launch jdbot_base_bringup fastlio_odom.launch.py
+# 或直接使用节点默认参数
+ros2 run jdbot_base_bringup fastlio_odom_converter_node
+```
+
+节点订阅 `/Odometry`（`nav_msgs/msg/Odometry`，SensorData QoS），每收到一帧有效数据，
+同时发布 `/odom` 和 `odom -> base_footprint` TF，沿用输入时间戳。
+保留输入的 x、y、yaw；z 默认为 0，roll/pitch 固定为 0。不会把首帧位姿归零。
+`scripts/print_odometry.py` 可继续用于查看原始数据。
+
+所有启动参数集中在 `launch/fastlio_odom.launch.py` 的 `parameters` 字典中，
+可直接修改 `input_topic`、`output_topic`、`odom_frame`、
+`base_frame`、`fixed_z`、`publish_tf`、`max_dt` 和 `twist_covariance_diagonal`。
+直接运行时可以通过 `--ros-args -p fixed_z:=0.0 -p publish_tf:=false` 等方式覆盖。
+
+平面线速度和角速度由相邻输入位姿及时间戳差分得到，线速度转换至 `base_footprint`
+坐标系，yaw 差分处理跨越 ±π 的情况；不直接采用输入的 twist。
+首帧、时间倒退、坐标系名变化或超过 `max_dt` 的间隔会将速度置零，并将平面速度的
+协方差对角线设为 `1e6`，表示该帧速度未知。相同时间戳的重复数据不再发布。
+正常速度帧使用配置的协方差（经验值，需要按实际数据调整）；位姿保留输入的
+x/y/yaw 协方差子矩阵，受平面约束的 z/roll/pitch 协方差清零。
+
+此转换假设输入世界坐标系可直接作为 odom，输入 body/IMU 坐标系与底盘在平面内
+对齐且原点重合；不会查询 TF 或补偿传感器安装外参。如果存在平面安装偏移或旋转，
+需要先补偿外参再使用该节点。运行时确保其他底盘或 EKF 节点不同时发布相同的
+`odom -> base_footprint` TF 和 `/odom`；只需话题时可设置 `publish_tf:=false`。
+
 ## 添加 C++ 节点
 
 将源码放到 `src/example_node.cpp`，在 `CMakeLists.txt` 的 `ament_package()` 前添加：

@@ -11,6 +11,15 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(tf2_ros REQUIRED)
+
+add_executable(fastlio_odom_converter_node src/fastlio_odom_converter_node.cpp)
+ament_target_dependencies(fastlio_odom_converter_node
+  rclcpp geometry_msgs nav_msgs tf2_ros
+)
+install(TARGETS fastlio_odom_converter_node DESTINATION lib/${PROJECT_NAME})
 
 # Install Python modules so imports keep working alongside C++ nodes.
 ament_python_install_package(${PROJECT_NAME} PACKAGE_DIR scripts)
