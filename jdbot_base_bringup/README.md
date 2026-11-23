@@ -35,16 +35,27 @@ ros2 run jdbot_base_bringup fastlio_odom_converter_node
 ```
 
 节点订阅 `/Odometry`（`nav_msgs/msg/Odometry`，SensorData QoS），每收到一帧有效数据，
-同时发布 `/odom` 和 `odom -> base_footprint` TF，沿用输入时间戳。
+同时发布 `/odom` 和 `odom -> base_footprint` TF，两者使用完全相同的时间戳，
+默认使用发布时节点时钟的 `now()`（启用 `use_sim_time` 时使用仿真时间）。
+通过 launch 参数 `tf_stamp_source` 可统一切换 `/odom` 和 TF 的时间戳来源：
+
+```bash
+# 默认 now：使用发布时的最新时间
+ros2 launch jdbot_base_bringup fastlio_odom.launch.py tf_stamp_source:=now
+# odometry：使用输入 /Odometry 的 header.stamp
+ros2 launch jdbot_base_bringup fastlio_odom.launch.py tf_stamp_source:=odometry
+```
+
 保留输入的 x、y、yaw；z 默认为 0，roll/pitch 固定为 0。不会把首帧位姿归零。
 `scripts/print_odometry.py` 可继续用于查看原始数据。
 
-所有启动参数集中在 `launch/fastlio_odom.launch.py` 的 `parameters` 字典中，
+其余节点参数集中在 `launch/fastlio_odom.launch.py` 的 `parameters` 字典中，
 可直接修改 `input_topic`、`output_topic`、`odom_frame`、
 `base_frame`、`fixed_z`、`publish_tf`、`max_dt` 和 `twist_covariance_diagonal`。
 直接运行时可以通过 `--ros-args -p fixed_z:=0.0 -p publish_tf:=false` 等方式覆盖。
+直接运行时也支持 `--ros-args -p tf_stamp_source:=odometry`，默认值为 `now`。
 
-平面线速度和角速度由相邻输入位姿及时间戳差分得到，线速度转换至 `base_footprint`
+无论输出时间戳来源如何设置，平面线速度和角速度均由相邻输入位姿及输入时间戳差分得到，线速度转换至 `base_footprint`
 坐标系，yaw 差分处理跨越 ±π 的情况；不直接采用输入的 twist。
 首帧、时间倒退、坐标系名变化或超过 `max_dt` 的间隔会将速度置零，并将平面速度的
 协方差对角线设为 `1e6`，表示该帧速度未知。相同时间戳的重复数据不再发布。

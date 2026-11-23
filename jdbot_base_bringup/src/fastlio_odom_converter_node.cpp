@@ -28,9 +28,13 @@ public:
     fixed_z_ = declare_parameter<double>("fixed_z", 0.0);
     max_dt_ = declare_parameter<double>("max_dt", 1.0);
     const auto publish_tf = declare_parameter<bool>("publish_tf", true);
+    tf_stamp_source_ = declare_parameter<std::string>("tf_stamp_source", "now");
     const auto twist_diagonal = declare_parameter<std::vector<double>>(
       "twist_covariance_diagonal", {0.1, 0.1, 1e6, 1e6, 1e6, 0.1});
 
+    if (tf_stamp_source_ != "now" && tf_stamp_source_ != "odometry") {
+      throw std::invalid_argument("tf_stamp_source must be 'now' or 'odometry'");
+    }
     if (odom_frame_.empty() || base_frame_.empty() || odom_frame_ == base_frame_ ||
       odom_frame_.front() == '/' || base_frame_.front() == '/')
     {
@@ -62,9 +66,10 @@ public:
       throw std::invalid_argument("input_topic and output_topic must resolve to different topics");
     }
     RCLCPP_INFO(
-      get_logger(), "Converting %s to %s, %s -> %s, z=%.3f, TF=%s",
+      get_logger(), "Converting %s to %s, %s -> %s, z=%.3f, TF=%s, odom/TF stamp=%s",
       subscription_->get_topic_name(), odom_publisher_->get_topic_name(),
-      odom_frame_.c_str(), base_frame_.c_str(), fixed_z_, publish_tf ? "on" : "off");
+      odom_frame_.c_str(), base_frame_.c_str(), fixed_z_, publish_tf ? "on" : "off",
+      tf_stamp_source_.c_str());
   }
 
 private:
@@ -127,6 +132,10 @@ private:
       }
     }
 
+    // Sample publication time once so odometry and TF have identical timestamps.
+    if (tf_stamp_source_ == "now") {
+      output.header.stamp = now();
+    }
     odom_publisher_->publish(output);
     if (tf_broadcaster_) {
       geometry_msgs::msg::TransformStamped transform;
@@ -150,6 +159,7 @@ private:
 
   std::string odom_frame_;
   std::string base_frame_;
+  std::string tf_stamp_source_;
   double fixed_z_{0.0};
   double max_dt_{1.0};
   std::array<double, 36> twist_covariance_{};
