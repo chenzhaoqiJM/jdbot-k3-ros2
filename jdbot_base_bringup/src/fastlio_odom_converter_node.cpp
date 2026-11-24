@@ -28,7 +28,8 @@ public:
     fixed_z_ = declare_parameter<double>("fixed_z", 0.0);
     max_dt_ = declare_parameter<double>("max_dt", 1.0);
     const auto publish_tf = declare_parameter<bool>("publish_tf", true);
-    tf_stamp_source_ = declare_parameter<std::string>("tf_stamp_source", "now");
+    tf_stamp_source_ = declare_parameter<std::string>("tf_stamp_source", "odometry");
+    flip_yz_ = declare_parameter<bool>("flip_yz", false);
     const auto twist_diagonal = declare_parameter<std::vector<double>>(
       "twist_covariance_diagonal", {0.1, 0.1, 1e6, 1e6, 1e6, 0.1});
 
@@ -66,10 +67,10 @@ public:
       throw std::invalid_argument("input_topic and output_topic must resolve to different topics");
     }
     RCLCPP_INFO(
-      get_logger(), "Converting %s to %s, %s -> %s, z=%.3f, TF=%s, odom/TF stamp=%s",
+      get_logger(), "Converting %s to %s, %s -> %s, z=%.3f, TF=%s, odom/TF stamp=%s, flip_yz=%s",
       subscription_->get_topic_name(), odom_publisher_->get_topic_name(),
       odom_frame_.c_str(), base_frame_.c_str(), fixed_z_, publish_tf ? "on" : "off",
-      tf_stamp_source_.c_str());
+      tf_stamp_source_.c_str(), flip_yz_ ? "true" : "false");
   }
 
 private:
@@ -78,16 +79,22 @@ private:
     const auto & position = input->pose.pose.position;
     const auto & q = input->pose.pose.orientation;
     const double norm = std::hypot(std::hypot(q.x, q.y), std::hypot(q.z, q.w));
-    if (!std::isfinite(position.x) || !std::isfinite(position.y) ||
+    if (!std::isfinite(position.x) || !std::isfinite(position.y) || !std::isfinite(position.z) ||
       !std::isfinite(norm) || norm < 1e-12)
     {
       RCLCPP_WARN_THROTTLE(
         get_logger(), *get_clock(), 5000, "Skipping invalid position or orientation");
       return;
     }
+    // Change both parent and child coordinate bases before planar projection.
+    // S=diag(1,-1,-1): p_out=S*p_in, R_out=S*R_in*S^T (FRD -> FLU).
+    // Quaternion conjugation by a 180-degree X rotation flips q.y and q.z.
+    const double yz_sign = flip_yz_ ? -1.0 : 1.0;
+    const double position_x = position.x;
+    const double position_y = yz_sign * position.y;
     const double qx = q.x / norm;
-    const double qy = q.y / norm;
-    const double qz = q.z / norm;
+    const double qy = yz_sign * q.y / norm;
+    const double qz = yz_sign * q.z / norm;
     const double qw = q.w / norm;
     const double yaw = std::atan2(
       2.0 * (qw * qz + qx * qy), 1.0 - 2.0 * (qy * qy + qz * qz));
@@ -102,8 +109,8 @@ private:
     output.header.stamp = input->header.stamp;
     output.header.frame_id = odom_frame_;
     output.child_frame_id = base_frame_;
-    output.pose.pose.position.x = position.x;
-    output.pose.pose.position.y = position.y;
+    output.pose.pose.position.x = position_x;
+    output.pose.pose.position.y = position_y;
     output.pose.pose.position.z = fixed_z_;
     output.pose.pose.orientation.z = std::sin(yaw / 2.0);
     output.pose.pose.orientation.w = std::cos(yaw / 2.0);
@@ -112,14 +119,17 @@ private:
     constexpr std::array<std::size_t, 3> planar_axes{0, 1, 5};
     for (const auto row : planar_axes) {
       for (const auto column : planar_axes) {
-        output.pose.covariance[row * 6 + column] = input->pose.covariance[row * 6 + column];
+        const double row_sign = row == 0 ? 1.0 : yz_sign;
+        const double column_sign = column == 0 ? 1.0 : yz_sign;
+        output.pose.covariance[row * 6 + column] =
+          row_sign * column_sign * input->pose.covariance[row * 6 + column];
       }
     }
     output.twist.covariance = twist_covariance_;
     const double dt = static_cast<double>(stamp_ns - previous_stamp_ns_) * 1e-9;
     if (has_previous_ && same_frames && dt > 0.0 && dt <= max_dt_) {
-      const double world_vx = (position.x - previous_x_) / dt;
-      const double world_vy = (position.y - previous_y_) / dt;
+      const double world_vx = (position_x - previous_x_) / dt;
+      const double world_vy = (position_y - previous_y_) / dt;
       // Odometry twist must be expressed in the child (base_footprint) frame.
       output.twist.twist.linear.x = std::cos(yaw) * world_vx + std::sin(yaw) * world_vy;
       output.twist.twist.linear.y = -std::sin(yaw) * world_vx + std::cos(yaw) * world_vy;
@@ -150,8 +160,8 @@ private:
 
     has_previous_ = true;
     previous_stamp_ns_ = stamp_ns;
-    previous_x_ = position.x;
-    previous_y_ = position.y;
+    previous_x_ = position_x;
+    previous_y_ = position_y;
     previous_yaw_ = yaw;
     previous_parent_frame_ = input->header.frame_id;
     previous_child_frame_ = input->child_frame_id;
@@ -160,6 +170,7 @@ private:
   std::string odom_frame_;
   std::string base_frame_;
   std::string tf_stamp_source_;
+  bool flip_yz_{false};
   double fixed_z_{0.0};
   double max_dt_{1.0};
   std::array<double, 36> twist_covariance_{};
